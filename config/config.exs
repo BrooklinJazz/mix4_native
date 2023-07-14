@@ -8,13 +8,13 @@
 import Config
 
 # Configures the endpoint
-config :lvn_tutorial, LvnTutorialWeb.Endpoint,
+config :lvn_tutorial, Connect4Web.Endpoint,
   url: [host: "localhost"],
   render_errors: [
-    formats: [html: LvnTutorialWeb.ErrorHTML, json: LvnTutorialWeb.ErrorJSON],
+    formats: [html: Connect4Web.ErrorHTML, json: Connect4Web.ErrorJSON],
     layout: false
   ],
-  pubsub_server: LvnTutorial.PubSub,
+  pubsub_server: Connect4.PubSub,
   live_view: [signing_salt: "jHOA2M6c"]
 
 # Configure esbuild (the version is required)
@@ -50,7 +50,7 @@ config :phoenix, :json_library, Jason
 config :live_view_native, :platforms, [LiveViewNativeSwiftUi.Platform]
 
 config :live_view_native, LiveViewNativeSwiftUi.Platform,
-  app_name: "LVNTutorial",
+  app_name: "Connect4",
   custom_modifiers: []
 
 

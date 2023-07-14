@@ -1,4 +1,4 @@
-defmodule LvnTutorialWeb.Endpoint do
+defmodule Connect4Web.Endpoint do
   use Phoenix.Endpoint, otp_app: :lvn_tutorial
 
   # The session will be stored in the cookie and signed,
@@ -21,7 +21,7 @@ defmodule LvnTutorialWeb.Endpoint do
     at: "/",
     from: :lvn_tutorial,
     gzip: false,
-    only: LvnTutorialWeb.static_paths()
+    only: Connect4Web.static_paths()
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
@@ -46,5 +46,5 @@ defmodule LvnTutorialWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
-  plug LvnTutorialWeb.Router
+  plug Connect4Web.Router
 end

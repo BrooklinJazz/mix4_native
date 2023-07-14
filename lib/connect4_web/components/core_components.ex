@@ -1,4 +1,4 @@
-defmodule LvnTutorialWeb.CoreComponents do
+defmodule Connect4Web.CoreComponents do
   @moduledoc """
   Provides core UI components.
 
@@ -642,9 +642,9 @@ defmodule LvnTutorialWeb.CoreComponents do
     # uncommenting and adjusting the following code:
 
     # if count = opts[:count] do
-    #   Gettext.dngettext(LvnTutorialWeb.Gettext, "errors", msg, msg, count, opts)
+    #   Gettext.dngettext(Connect4Web.Gettext, "errors", msg, msg, count, opts)
     # else
-    #   Gettext.dgettext(LvnTutorialWeb.Gettext, "errors", msg, opts)
+    #   Gettext.dgettext(Connect4Web.Gettext, "errors", msg, opts)
     # end
 
     Enum.reduce(opts, msg, fn {key, value}, acc ->

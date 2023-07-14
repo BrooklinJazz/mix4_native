@@ -1,5 +1,5 @@
-defmodule LvnTutorialWeb.ErrorHTML do
-  use LvnTutorialWeb, :html
+defmodule Connect4Web.ErrorHTML do
+  use Connect4Web, :html
 
   # If you want to customize your error pages,
   # uncomment the embed_templates/1 call below

@@ -1,4 +1,4 @@
-# LvnTutorial
+# Connect4
 
 To start your Phoenix server:
 

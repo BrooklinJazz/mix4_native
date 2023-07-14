@@ -1,4 +1,4 @@
-defmodule LvnTutorial.Application do
+defmodule Connect4.Application do
   # See https://hexdocs.pm/elixir/Application.html
   # for more information on OTP Applications
   @moduledoc false
@@ -9,18 +9,18 @@ defmodule LvnTutorial.Application do
   def start(_type, _args) do
     children = [
       # Start the Telemetry supervisor
-      LvnTutorialWeb.Telemetry,
+      Connect4Web.Telemetry,
       # Start the PubSub system
-      {Phoenix.PubSub, name: LvnTutorial.PubSub},
+      {Phoenix.PubSub, name: Connect4.PubSub},
       # Start the Endpoint (http/https)
-      LvnTutorialWeb.Endpoint
-      # Start a worker by calling: LvnTutorial.Worker.start_link(arg)
-      # {LvnTutorial.Worker, arg}
+      Connect4Web.Endpoint
+      # Start a worker by calling: Connect4.Worker.start_link(arg)
+      # {Connect4.Worker, arg}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
-    opts = [strategy: :one_for_one, name: LvnTutorial.Supervisor]
+    opts = [strategy: :one_for_one, name: Connect4.Supervisor]
     Supervisor.start_link(children, opts)
   end
 
@@ -28,7 +28,7 @@ defmodule LvnTutorial.Application do
   # whenever the application is updated.
   @impl true
   def config_change(changed, _new, removed) do
-    LvnTutorialWeb.Endpoint.config_change(changed, removed)
+    Connect4Web.Endpoint.config_change(changed, removed)
     :ok
   end
 end

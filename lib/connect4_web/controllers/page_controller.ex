@@ -1,5 +1,5 @@
-defmodule LvnTutorialWeb.PageController do
-  use LvnTutorialWeb, :controller
+defmodule Connect4Web.PageController do
+  use Connect4Web, :controller
 
   def home(conn, _params) do
     # The home page is often custom made,

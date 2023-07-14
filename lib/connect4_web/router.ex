@@ -1,11 +1,11 @@
-defmodule LvnTutorialWeb.Router do
-  use LvnTutorialWeb, :router
+defmodule Connect4Web.Router do
+  use Connect4Web, :router
 
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
     plug :fetch_live_flash
-    plug :put_root_layout, html: {LvnTutorialWeb.Layouts, :root}
+    plug :put_root_layout, html: {Connect4Web.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
   end
@@ -14,14 +14,14 @@ defmodule LvnTutorialWeb.Router do
     plug :accepts, ["json"]
   end
 
-  scope "/", LvnTutorialWeb do
+  scope "/", Connect4Web do
     pipe_through :browser
 
     live "/", Connect4Live
   end
 
   # Other scopes may use custom stacks.
-  # scope "/api", LvnTutorialWeb do
+  # scope "/api", Connect4Web do
   #   pipe_through :api
   # end
 
@@ -37,7 +37,7 @@ defmodule LvnTutorialWeb.Router do
     scope "/dev" do
       pipe_through :browser
 
-      live_dashboard "/dashboard", metrics: LvnTutorialWeb.Telemetry
+      live_dashboard "/dashboard", metrics: Connect4Web.Telemetry
     end
   end
 end

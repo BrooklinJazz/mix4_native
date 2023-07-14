@@ -1,4 +1,4 @@
-defmodule LvnTutorial.MixProject do
+defmodule Connect4.MixProject do
   use Mix.Project
 
   def project do
@@ -18,7 +18,7 @@ defmodule LvnTutorial.MixProject do
   # Type `mix help compile.app` for more information.
   def application do
     [
-      mod: {LvnTutorial.Application, []},
+      mod: {Connect4.Application, []},
       extra_applications: [:logger, :runtime_tools]
     ]
   end

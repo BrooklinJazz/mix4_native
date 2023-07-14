@@ -1,12 +1,12 @@
-defmodule LvnTutorialWeb do
+defmodule Connect4Web do
   @moduledoc """
   The entrypoint for defining your web interface, such
   as controllers, components, channels, and so on.
 
   This can be used in your application as:
 
-      use LvnTutorialWeb, :controller
-      use LvnTutorialWeb, :html
+      use Connect4Web, :controller
+      use Connect4Web, :html
 
   The definitions below will be executed for every controller,
   component, etc, so keep them short and clean, focused
@@ -40,7 +40,7 @@ defmodule LvnTutorialWeb do
     quote do
       use Phoenix.Controller,
         formats: [:html, :json],
-        layouts: [html: LvnTutorialWeb.Layouts]
+        layouts: [html: Connect4Web.Layouts]
 
       import Plug.Conn
 
@@ -51,7 +51,7 @@ defmodule LvnTutorialWeb do
   def live_view do
     quote do
       use Phoenix.LiveView,
-        layout: {LvnTutorialWeb.Layouts, :app}
+        layout: {Connect4Web.Layouts, :app}
 
       unquote(html_helpers())
     end
@@ -83,7 +83,7 @@ defmodule LvnTutorialWeb do
       # HTML escaping functionality
       import Phoenix.HTML
       # Core UI components and translation
-      import LvnTutorialWeb.CoreComponents
+      import Connect4Web.CoreComponents
 
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS
@@ -96,9 +96,9 @@ defmodule LvnTutorialWeb do
   def verified_routes do
     quote do
       use Phoenix.VerifiedRoutes,
-        endpoint: LvnTutorialWeb.Endpoint,
-        router: LvnTutorialWeb.Router,
-        statics: LvnTutorialWeb.static_paths()
+        endpoint: Connect4Web.Endpoint,
+        router: Connect4Web.Router,
+        statics: Connect4Web.static_paths()
     end
   end
 
