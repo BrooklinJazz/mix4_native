@@ -3,7 +3,7 @@ defmodule Connect4Web.Connect4Live do
   use LiveViewNative.LiveView
 
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, board_matrix: Connect4.board())}
+    {:ok, assign(socket, board_matrix: Connect4.initial_board())}
   end
 
   def render(%{platform_id: :web} = assigns) do

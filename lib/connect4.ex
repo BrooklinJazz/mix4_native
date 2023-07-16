@@ -6,7 +6,7 @@ defmodule Connect4 do
   Contexts are also responsible for managing your data, regardless
   if it comes from the database, an external API or others.
   """
-  @board [
+  @initial_board [
     [nil, nil, nil, nil, nil, nil, nil],
     [nil, nil, nil, nil, nil, nil, nil],
     [nil, nil, nil, nil, nil, nil, nil],
@@ -15,7 +15,7 @@ defmodule Connect4 do
     [nil, nil, nil, nil, nil, nil, nil]
   ]
 
-  def board, do: @board
+  def initial_board, do: @initial_board
 
   def drop(board, column_index, marker) do
     nil_count = count_nils(board, column_index)
@@ -31,6 +31,46 @@ defmodule Connect4 do
     end
   end
 
+  def winners(board) do
+    check_columns(board)
+  end
+
+  def check_columns(board) do
+    results =
+      for x <- 0..6, y <- 0..2 do
+        check_column(board, x, y)
+      end
+
+    Enum.filter(results, & &1)
+  end
+
+  def check_column(board, x, y, acc \\ [], count \\ 4)
+  def check_column(board, x, y, acc, 0), do: Enum.map(acc, fn {_, x, y} -> {x, y} end)
+
+  def check_column(board, x, y, acc, count) do
+    case {acc, at(board, x, y)} do
+      {_, nil} ->
+        false
+
+      {[], current_cell} ->
+        check_column(board, x, y + 1, [{current_cell, x, y} | acc], count - 1)
+
+      {[{same_color, prev_x, prev_y} | _], same_color} ->
+        check_column(board, x, y + 1, [{same_color, x, y} | acc], count - 1)
+
+      _ ->
+        false
+    end
+  end
+
+  # def check_rows(board) do
+  #   for x <- 3..5, y <- 0..6 do
+  #     check_column(board, x, y)
+  #   end
+
+  #   Enum.filter(results, & &1)
+  # end
+
   defp count_nils(board, column_index), do: Enum.count(column(board, column_index), &is_nil/1)
 
   defp column(board, column_index) do
@@ -38,47 +78,10 @@ defmodule Connect4 do
       [Enum.at(row, column_index) | acc]
     end)
   end
+
+  defp at(board, x, y) do
+    board
+    |> Enum.at(y)
+    |> Enum.at(x)
+  end
 end
-
-# OTHER ATTEMPTS
-# lowest_position =
-#   Enum.reduce(board, 0, fn row, acc ->
-#     if Enum.at(row, column_index) == nil do
-#       acc + 1
-#     else
-#       acc
-#     end
-#   end)
-
-# if nil_count == 0 do
-#   {:error, :column_full}
-# else
-# end
-
-# new_column =
-#   board
-#   |> column(column_index)
-#   |> Enum.reduce([], fn
-#     nil, {acc, false} -> {[marker | acc], true}
-#     each, {acc, true} -> {[each | acc], true}
-#   end)
-#   |> Enum.reverse()
-
-# List.replace_at(board, )
-
-# board
-# |> Enum.reverse()
-# |> IO.inspect()
-# |> Enum.reduce({[], false}, fn
-#   row, {acc, true} ->
-#     {[row | acc], true}
-
-#   row, {acc, false} ->
-#     if Enum.at(row, column_index) == nil do
-#       new_row = List.replace_at(row, column_index, marker)
-#       {[new_row | acc], true}
-#     else
-#       {[row | acc], false}
-#     end
-# end)
-# |> elem(0)
