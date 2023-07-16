@@ -77,6 +77,8 @@ defmodule Connect4Test do
     end
   end
 
+  # Many of these tests are coupled to order when they shouldn't be.
+  # However, this makes writing these tests simpler.
   describe "winners/1" do
     test "one column winner" do
       board = [
