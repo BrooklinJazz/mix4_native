@@ -32,44 +32,58 @@ defmodule Connect4 do
   end
 
   def winners(board) do
-    check_columns(board)
+    []
+    |> Kernel.++(check_rows(board))
+    |> Kernel.++(check_columns(board))
+    |> Kernel.++(check_diagonals(board))
+    |> Enum.filter(& &1)
+  end
+
+  def check_rows(board) do
+    for x <- 0..4, y <- 0..5, do: check(:right, board, {x, y})
   end
 
   def check_columns(board) do
-    results =
-      for x <- 0..6, y <- 0..2 do
-        check_column(board, x, y)
-      end
-
-    Enum.filter(results, & &1)
+    for x <- 0..6, y <- 0..2, do: check(:up, board, {x, y})
   end
 
-  def check_column(board, x, y, acc \\ [], count \\ 4)
-  def check_column(board, x, y, acc, 0), do: Enum.map(acc, fn {_, x, y} -> {x, y} end)
+  def check_diagonals(board) do
+    up_right_diagonals = for x <- 0..3, y <- 3..5, do: check(:up_right, board, {x, y})
+    down_right_diagonals = for x <- 0..3, y <- 0..2, do: check(:down_right, board, {x, y})
+    up_right_diagonals ++ down_right_diagonals
+  end
 
-  def check_column(board, x, y, acc, count) do
-    case {acc, at(board, x, y)} do
-      {_, nil} ->
-        false
+  def check(direction, board, pos, acc \\ [], count \\ 4)
 
-      {[], current_cell} ->
-        check_column(board, x, y + 1, [{current_cell, x, y} | acc], count - 1)
+  def check(direction, board, {x, y} = pos, [prev_pos | _] = acc, 1) do
+    current_cell = at(board, pos)
+    prev_cell = at(board, walk(direction, prev_pos))
 
-      {[{same_color, prev_x, prev_y} | _], same_color} ->
-        check_column(board, x, y + 1, [{same_color, x, y} | acc], count - 1)
+    if current_cell == prev_cell, do: [pos | acc]
+  end
 
-      _ ->
-        false
+  def check(direction, board, {x, y} = pos, acc, count) do
+    current_cell = at(board, pos)
+    next_cell = at(board, walk(direction, pos))
+
+    if current_cell && current_cell == next_cell do
+      check(direction, board, walk(direction, pos), [pos | acc], count - 1)
     end
   end
 
-  # def check_rows(board) do
-  #   for x <- 3..5, y <- 0..6 do
-  #     check_column(board, x, y)
-  #   end
+  defp walk(:right, {x, y}), do: {x + 1, y}
+  defp walk(:up, {x, y}), do: {x, y + 1}
+  defp walk(:up_right, {x, y}), do: {x + 1, y - 1}
+  defp walk(:down_right, {x, y}), do: {x + 1, y + 1}
 
-  #   Enum.filter(results, & &1)
-  # end
+  def check_rows(board) do
+    # results =
+    #   for x <- 4..5, y <- 0..5 do
+    #     check_row_left(board, x, y)
+    #   end
+
+    # Enum.filter(results, & &1)
+  end
 
   defp count_nils(board, column_index), do: Enum.count(column(board, column_index), &is_nil/1)
 
@@ -78,6 +92,8 @@ defmodule Connect4 do
       [Enum.at(row, column_index) | acc]
     end)
   end
+
+  defp at(board, {x, y}), do: at(board, x, y)
 
   defp at(board, x, y) do
     board

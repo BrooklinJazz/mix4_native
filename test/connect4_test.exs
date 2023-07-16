@@ -1,6 +1,7 @@
 defmodule Connect4Test do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   doctest Connect4
+
   alias Connect4
 
   test "initial_board/0" do
@@ -76,104 +77,184 @@ defmodule Connect4Test do
     end
   end
 
-  test "winners/1 _ one winner" do
-    board = [
-      [:red, nil, nil, nil, nil, nil, nil],
-      [:red, nil, nil, nil, nil, nil, nil],
-      [:red, nil, nil, nil, nil, nil, nil],
-      [:red, nil, nil, nil, nil, nil, nil],
-      [nil, nil, nil, nil, nil, nil, nil],
-      [nil, nil, nil, nil, nil, nil, nil]
-    ]
+  describe "winners/1" do
+    test "one column winner" do
+      board = [
+        [:red, nil, nil, nil, nil, nil, nil],
+        [:red, nil, nil, nil, nil, nil, nil],
+        [:red, nil, nil, nil, nil, nil, nil],
+        [:red, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil]
+      ]
 
-    assert [winner_row] = Connect4.winners(board)
-    assert Enum.sort(winner_row) == Enum.sort([{0, 0}, {0, 1}, {0, 2}, {0, 3}])
-  end
+      assert [winner_row] = Connect4.winners(board)
+      assert winner_row == [{0, 3}, {0, 2}, {0, 1}, {0, 0}]
+    end
 
-  test "check_columns/1 _ one winner" do
-    board = [
-      [:red, nil, nil, nil, nil, nil, nil],
-      [:red, nil, nil, nil, nil, nil, nil],
-      [:red, nil, nil, nil, nil, nil, nil],
-      [:red, nil, nil, nil, nil, nil, nil],
-      [nil, nil, nil, nil, nil, nil, nil],
-      [nil, nil, nil, nil, nil, nil, nil]
-    ]
+    test "multiple column winners" do
+      board = [
+        [:red, nil, nil, nil, nil, nil, :yellow],
+        [:red, nil, nil, :red, nil, nil, :yellow],
+        [:red, :red, nil, :red, nil, nil, :yellow],
+        [:red, :red, nil, :red, nil, nil, :yellow],
+        [nil, :red, nil, :red, nil, nil, :red],
+        [nil, :red, nil, :red, nil, nil, nil]
+      ]
 
-    assert [winner_row] = Connect4.check_columns(board)
-    # order does not matter
-    assert Enum.sort(winner_row) == [{0, 0}, {0, 1}, {0, 2}, {0, 3}]
-  end
+      assert Connect4.winners(board) ==
+               [
+                 [{0, 3}, {0, 2}, {0, 1}, {0, 0}],
+                 [{1, 5}, {1, 4}, {1, 3}, {1, 2}],
+                 [{3, 4}, {3, 3}, {3, 2}, {3, 1}],
+                 [{3, 5}, {3, 4}, {3, 3}, {3, 2}],
+                 [{6, 3}, {6, 2}, {6, 1}, {6, 0}]
+               ]
+    end
 
-  test "check_columns/1 _ multiple winners" do
-    board = [
-      [:red, nil, nil, nil, nil, nil, :yellow],
-      [:red, nil, nil, :red, nil, nil, :yellow],
-      [:red, :red, nil, :red, nil, nil, :yellow],
-      [:red, :red, nil, :red, nil, nil, :yellow],
-      [nil, :red, nil, :red, nil, nil, :red],
-      [nil, :red, nil, :red, nil, nil, nil]
-    ]
+    test "one winning right facing row" do
+      board = [
+        [nil, nil, nil, :red, :red, :red, :red],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil]
+      ]
 
-    assert Connect4.check_columns(board) ==
-             [
-               [{0, 3}, {0, 2}, {0, 1}, {0, 0}],
-               [{1, 5}, {1, 4}, {1, 3}, {1, 2}],
-               [{3, 4}, {3, 3}, {3, 2}, {3, 1}],
-               [{3, 5}, {3, 4}, {3, 3}, {3, 2}],
-               [{6, 3}, {6, 2}, {6, 1}, {6, 0}]
+      assert [row] = Connect4.winners(board)
+      assert row == [{6, 0}, {5, 0}, {4, 0}, {3, 0}]
+    end
+
+    test "one winning left facing row" do
+      board = [
+        [:red, :red, :red, :red, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil]
+      ]
+
+      assert [row] = Connect4.winners(board)
+      assert row == [{3, 0}, {2, 0}, {1, 0}, {0, 0}]
+    end
+
+    test "multiple row winners" do
+      board = [
+        [nil, nil, nil, :red, :red, :red, :red],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, :red, :red, :red, :red, :red, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [:yellow, :yellow, :yellow, :yellow, nil, nil, nil]
+      ]
+
+      assert Connect4.winners(board) == [
+               [{3, 5}, {2, 5}, {1, 5}, {0, 5}],
+               [{4, 2}, {3, 2}, {2, 2}, {1, 2}],
+               [{5, 2}, {4, 2}, {3, 2}, {2, 2}],
+               [{6, 0}, {5, 0}, {4, 0}, {3, 0}]
              ]
-  end
+    end
 
-  test "check_rows/1 one winner" do
-    board = [
-      [:red, :red, :red, :red, nil, nil, nil],
-      [nil, nil, nil, nil, nil, nil, nil],
-      [nil, nil, nil, nil, nil, nil, nil],
-      [nil, nil, nil, nil, nil, nil, nil],
-      [nil, nil, nil, nil, nil, nil, nil],
-      [nil, nil, nil, nil, nil, nil, nil]
-    ]
+    test "one diagonal up right winner" do
+      board = [
+        [nil, nil, nil, :red, nil, nil, nil],
+        [nil, nil, :red, nil, nil, nil, nil],
+        [nil, :red, nil, nil, nil, nil, nil],
+        [:red, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil]
+      ]
 
-    assert [row] = Connect4.check_rows(board)
-    assert row == [{0, 0}, {1, 0}, {2, 0}, {3, 0}]
-  end
+      assert [diagonal1] = Connect4.winners(board)
+      assert diagonal1 == [{3, 0}, {2, 1}, {1, 2}, {0, 3}]
+    end
 
-  @tag :skip
-  test "check_rows/1 multiple winners" do
-    board = [
-      [nil, nil, nil, :red, :red, :red, :red],
-      [nil, nil, nil, nil, nil, nil, nil],
-      [nil, :red, :red, :red, :red, :red, nil],
-      [nil, nil, nil, nil, nil, nil, nil],
-      [nil, nil, nil, nil, nil, nil, nil],
-      [:yellow, :yellow, :yellow, :yellow, nil, nil, nil]
-    ]
+    test "multiple diagonal up right winner" do
+      board = [
+        [nil, nil, nil, :red, nil, :red, nil],
+        [nil, nil, :red, nil, :red, nil, nil],
+        [nil, :red, nil, :red, nil, nil, :red],
+        [:red, nil, :red, nil, nil, :red, nil],
+        [nil, :red, nil, nil, :red, nil, nil],
+        [nil, nil, nil, :red, nil, nil, nil]
+      ]
 
-    sorted_winners = Connect4.winners(board) |> Enum.sort()
-  end
+      assert Connect4.winners(board) == [
+               [{3, 0}, {2, 1}, {1, 2}, {0, 3}],
+               [{4, 1}, {3, 2}, {2, 3}, {1, 4}],
+               [{5, 0}, {4, 1}, {3, 2}, {2, 3}],
+               [{6, 2}, {5, 3}, {4, 4}, {3, 5}]
+             ]
+    end
 
-  @tag :skip
-  test "diagonal right" do
-    [
-      [nil, nil, nil, :red, nil, :red, nil],
-      [nil, nil, :red, nil, :red, nil, nil],
-      [nil, :red, nil, :red, nil, nil, :red],
-      [:red, nil, :red, nil, nil, :red, nil],
-      [nil, :red, nil, nil, :red, nil, nil],
-      [nil, nil, nil, :red, nil, nil, nil]
-    ]
-  end
+    test "one diagonal down right winners" do
+      board = [
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [:red, nil, nil, nil, nil, nil, nil],
+        [nil, :red, nil, nil, nil, nil, nil],
+        [nil, nil, :red, nil, nil, nil, nil],
+        [nil, nil, nil, :red, nil, nil, nil]
+      ]
 
-  @tag :skip
-  test "diagonal left" do
-    [
-      [nil, :yellow, nil, :red, nil, nil, nil],
-      [nil, nil, :yellow, nil, :red, nil, nil],
-      [:red, nil, nil, :yellow, nil, :red, nil],
-      [nil, :red, nil, nil, :yellow, nil, :red],
-      [nil, nil, :red, nil, nil, :yellow, nil],
-      [nil, nil, nil, :red, nil, nil, nil]
-    ]
+      assert [diagonal1] = Connect4.winners(board)
+      assert diagonal1 == [{3, 5}, {2, 4}, {1, 3}, {0, 2}]
+    end
+
+    test "multiple diagonal down right winners" do
+      board = [
+        [nil, nil, nil, :red, nil, nil, nil],
+        [nil, :red, nil, nil, :red, nil, nil],
+        [:red, nil, :red, nil, nil, :red, nil],
+        [nil, :red, nil, :red, nil, nil, :red],
+        [nil, nil, :red, nil, :red, nil, nil],
+        [nil, nil, nil, :red, nil, :red, nil]
+      ]
+
+      assert Connect4.winners(board) == [
+               [{3, 5}, {2, 4}, {1, 3}, {0, 2}],
+               [{4, 4}, {3, 3}, {2, 2}, {1, 1}],
+               [{5, 5}, {4, 4}, {3, 3}, {2, 2}],
+               [{6, 3}, {5, 2}, {4, 1}, {3, 0}]
+             ]
+    end
+
+    test "integrate columns, rows, and diagonals" do
+      board = [
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [:red, nil, nil, :red, nil, nil, nil],
+        [:red, nil, :red, nil, nil, nil, nil],
+        [:red, :red, nil, nil, nil, nil, nil],
+        [:red, :red, :red, :red, nil, nil, nil]
+      ]
+
+      assert Connect4.winners(board) == [
+               [{3, 5}, {2, 5}, {1, 5}, {0, 5}],
+               [{0, 5}, {0, 4}, {0, 3}, {0, 2}],
+               [{3, 2}, {2, 3}, {1, 4}, {0, 5}]
+             ]
+    end
+
+    test "all possible winners" do
+      board = [
+        [:red, :red, :red, :red, :red, :red, :red],
+        [:red, :red, :red, :red, :red, :red, :red],
+        [:red, :red, :red, :red, :red, :red, :red],
+        [:red, :red, :red, :red, :red, :red, :red],
+        [:red, :red, :red, :red, :red, :red, :red],
+        [:red, :red, :red, :red, :red, :red, :red]
+      ]
+
+      rows = 4 * 6
+      columns = 7 * 3
+      diagonals = 3 * 4 * 2
+      total_win_spots = rows + columns + diagonals
+
+      assert Connect4.winners(board) |> Enum.count() == total_win_spots
+    end
   end
 end
