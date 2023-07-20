@@ -77,6 +77,62 @@ defmodule Connect4Test do
     end
   end
 
+  describe "winner/1" do
+    test "no winner" do
+      board = [
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil]
+      ]
+
+      assert Connect4.winner!(board) == nil
+    end
+
+    test "red column" do
+      board = [
+        [:red, nil, nil, nil, nil, nil, nil],
+        [:red, nil, nil, nil, nil, nil, nil],
+        [:red, nil, nil, nil, nil, nil, nil],
+        [:red, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil]
+      ]
+
+      assert Connect4.winner!(board) == :red
+    end
+
+    test "yellow row" do
+      board = [
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [:yellow, :yellow, :yellow, :yellow, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil]
+      ]
+
+      assert Connect4.winner!(board) == :yellow
+    end
+
+    test "invalid due to multiple winners" do
+      board = [
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [:red, :red, :red, :red, nil, nil, nil],
+        [:yellow, :yellow, :yellow, :yellow, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, nil, nil, nil, nil]
+      ]
+
+      assert_raise RuntimeError, fn ->
+        Connect4.winner!(board)
+      end
+    end
+  end
+
   # Many of these tests are coupled to order when they shouldn't be.
   # However, this makes writing these tests simpler.
   describe "winners/1" do

@@ -31,6 +31,20 @@ defmodule Connect4 do
     end
   end
 
+  def winner!(board) do
+    colors =
+      winners(board)
+      |> List.flatten()
+      |> Enum.map(fn pos -> at(board, pos) end)
+      |> Enum.uniq()
+
+    case colors do
+      [] -> nil
+      [winner] -> winner
+      [_head | _tail] -> raise "Invalid Board: multiple winners"
+    end
+  end
+
   def winners(board) do
     []
     |> Kernel.++(check_rows(board))
@@ -55,14 +69,14 @@ defmodule Connect4 do
 
   def check(direction, board, pos, acc \\ [], count \\ 4)
 
-  def check(direction, board, {x, y} = pos, [prev_pos | _] = acc, 1) do
+  def check(direction, board, pos, [prev_pos | _] = acc, 1) do
     current_cell = at(board, pos)
     prev_cell = at(board, walk(direction, prev_pos))
 
     if current_cell == prev_cell, do: [pos | acc]
   end
 
-  def check(direction, board, {x, y} = pos, acc, count) do
+  def check(direction, board, pos, acc, count) do
     current_cell = at(board, pos)
     next_cell = at(board, walk(direction, pos))
 
@@ -75,15 +89,6 @@ defmodule Connect4 do
   defp walk(:up, {x, y}), do: {x, y + 1}
   defp walk(:up_right, {x, y}), do: {x + 1, y - 1}
   defp walk(:down_right, {x, y}), do: {x + 1, y + 1}
-
-  def check_rows(board) do
-    # results =
-    #   for x <- 4..5, y <- 0..5 do
-    #     check_row_left(board, x, y)
-    #   end
-
-    # Enum.filter(results, & &1)
-  end
 
   defp count_nils(board, column_index), do: Enum.count(column(board, column_index), &is_nil/1)
 
