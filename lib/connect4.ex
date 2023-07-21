@@ -1,10 +1,20 @@
 defmodule Connect4 do
   @moduledoc """
-  Connect4 keeps the contexts that define your domain
-  and business logic.
+  Connect4 Module Documentation
 
-  Contexts are also responsible for managing your data, regardless
-  if it comes from the database, an external API or others.
+  A Connect 4 board is represented by a list of lists.
+  There are 7 columns and 6 rows in a connect 4 board.
+
+  ```elixir
+  [
+    [nil, nil, nil, nil, nil, nil, nil],
+    [nil, nil, nil, nil, nil, nil, nil],
+    [nil, nil, nil, nil, nil, nil, nil],
+    [nil, nil, nil, nil, nil, nil, nil],
+    [nil, nil, nil, nil, nil, nil, nil],
+    [nil, nil, nil, nil, nil, nil, nil]
+  ]
+  ```
   """
   @initial_board [
     [nil, nil, nil, nil, nil, nil, nil],
@@ -31,6 +41,8 @@ defmodule Connect4 do
     end
   end
 
+  def transpose(board), do: board |> Enum.zip() |> Enum.map(&Tuple.to_list/1)
+
   def winner!(board) do
     colors =
       winners(board)
@@ -53,30 +65,30 @@ defmodule Connect4 do
     |> Enum.filter(& &1)
   end
 
-  def check_rows(board) do
+  defp check_rows(board) do
     for x <- 0..4, y <- 0..5, do: check(:right, board, {x, y})
   end
 
-  def check_columns(board) do
+  defp check_columns(board) do
     for x <- 0..6, y <- 0..2, do: check(:up, board, {x, y})
   end
 
-  def check_diagonals(board) do
+  defp check_diagonals(board) do
     up_right_diagonals = for x <- 0..3, y <- 3..5, do: check(:up_right, board, {x, y})
     down_right_diagonals = for x <- 0..3, y <- 0..2, do: check(:down_right, board, {x, y})
     up_right_diagonals ++ down_right_diagonals
   end
 
-  def check(direction, board, pos, acc \\ [], count \\ 4)
+  defp check(direction, board, pos, acc \\ [], count \\ 4)
 
-  def check(direction, board, pos, [prev_pos | _] = acc, 1) do
+  defp check(direction, board, pos, [prev_pos | _] = acc, 1) do
     current_cell = at(board, pos)
     prev_cell = at(board, walk(direction, prev_pos))
 
     if current_cell == prev_cell, do: [pos | acc]
   end
 
-  def check(direction, board, pos, acc, count) do
+  defp check(direction, board, pos, acc, count) do
     current_cell = at(board, pos)
     next_cell = at(board, walk(direction, pos))
 

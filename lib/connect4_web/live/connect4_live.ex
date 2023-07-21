@@ -2,13 +2,35 @@ defmodule Connect4Web.Connect4Live do
   use Connect4Web, :live_view
   use LiveViewNative.LiveView
 
-  def mount(_params, _session, socket) do
-    {:ok, assign(socket, board: Connect4.initial_board(), player: :red, winner: nil, count: 0)}
+  def mount(params, _session, socket) do
+    socket =
+      assign(socket, board: Connect4.initial_board(), player: :red, winner: nil, count: 0)
+      |> assign_platform_id(params)
+
+    {:ok, socket}
   end
 
   def render(%{platform_id: :web} = assigns) do
     ~H"""
-    Connect4
+    <section class="flex h-screen w-full gap-x-2 items-center justify-center">
+      <%= if @winner do %>
+        <h1><%= @winner %> wins!</h1>
+      <% else %>
+        <%= for {column, x} <- Enum.with_index(Connect4.transpose(@board)) do %>
+          <article
+            id={"column-#{x}"}
+            phx-click="drop"
+            phx-value-column={x}
+            class="flex flex-col gap-y-2 "
+          >
+            <%= for {cell, y} <- Enum.with_index(column) do %>
+              <button id={"cell-#{x}-#{y}"} class={"h-12 w-12 rounded-full #{tailwind_color(cell)}"}>
+              </button>
+            <% end %>
+          </article>
+        <% end %>
+      <% end %>
+    </section>
     """
   end
 
@@ -24,7 +46,7 @@ defmodule Connect4Web.Connect4Live do
           <%= for {row, y} <- Enum.with_index(@board) do %>
             <HStack id={inspect(y)}>
               <%= for {cell, x} <- Enum.with_index(row) do %>
-                <Circle id={inspect({x, y})} phx-click="drop" phx-value-column={x} fill-color={color(cell)} />
+                <Circle id={"cell-#{x}-#{y}"} phx-click="drop" phx-value-column={x} fill-color={color_code(cell)} />
               <% end %>
             </HStack>
           <% end %>
@@ -33,9 +55,8 @@ defmodule Connect4Web.Connect4Live do
     </Section>
     """
   end
-  def test(), do: true
 
-  def color(cell) do
+  def color_code(cell) do
     case cell do
       :red -> "#FF0000"
       :yellow -> "#FFC82F"
@@ -43,9 +64,18 @@ defmodule Connect4Web.Connect4Live do
     end
   end
 
-  def handle_event("increment", _params, socket) do
-    {:noreply, assign(socket, :count ,socket.assigns.count + 1)}
+  def tailwind_color(cell) do
+    case cell do
+      :red -> "bg-red-400"
+      :yellow -> "bg-yellow-400"
+      _ -> "bg-black"
+    end
   end
+
+  def handle_event("increment", _params, socket) do
+    {:noreply, assign(socket, :count, socket.assigns.count + 1)}
+  end
+
   def handle_event("drop", %{"column" => column}, socket) do
     {:noreply,
      socket
@@ -74,7 +104,16 @@ defmodule Connect4Web.Connect4Live do
 
   def check_winner(socket) do
     winner = Connect4.winner!(socket.assigns.board)
-    IO.inspect(winner, label: "WINNER")
     assign(socket, :winner, winner)
+  end
+
+  defp assign_platform_id(socket, params) do
+    case params do
+      %{"platform_id" => platform_id} ->
+        assign(socket, :platform_id, String.to_existing_atom(platform_id))
+
+      _ ->
+        socket
+    end
   end
 end

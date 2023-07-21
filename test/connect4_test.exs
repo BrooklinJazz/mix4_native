@@ -315,4 +315,25 @@ defmodule Connect4Test do
       assert Connect4.winners(board) |> Enum.count() == total_win_spots
     end
   end
+
+  test "transpose/1" do
+    board = [
+      [:red, nil, nil, :red, nil, nil, :red],
+      [:red, nil, nil, nil, nil, nil, :red],
+      [:red, nil, nil, nil, nil, nil, :red],
+      [:red, nil, nil, nil, nil, nil, :red],
+      [:red, nil, nil, nil, nil, nil, :red],
+      [:red, nil, nil, nil, nil, nil, :red]
+    ]
+
+    assert Connect4.transpose(board) == [
+             [:red, :red, :red, :red, :red, :red],
+             [nil, nil, nil, nil, nil, nil],
+             [nil, nil, nil, nil, nil, nil],
+             [:red, nil, nil, nil, nil, nil],
+             [nil, nil, nil, nil, nil, nil],
+             [nil, nil, nil, nil, nil, nil],
+             [:red, :red, :red, :red, :red, :red]
+           ]
+  end
 end
