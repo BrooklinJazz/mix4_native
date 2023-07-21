@@ -1,68 +1,65 @@
 defmodule Connect4Web.Connect4LiveTest do
   use Connect4Web.ConnCase, async: true
 
-  setup do
-    on_exit(fn -> Application.put_env(:connect4, :platform_id, :web) end)
-    :ok
-  end
+  describe "web" do
+    test "connected mount", %{conn: conn} do
+      {:ok, _view, html} = live(conn, "/")
 
-  test "connected mount", %{conn: conn} do
-    {:ok, _view, html} = live(conn, "/")
+      assert html =~ "Connect4"
+    end
 
-    assert html =~ "Connect4"
-  end
+    test "connected mount - render board", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/")
 
-  test "connected mount - render board", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/")
+      assert view |> element("#board")
 
-    assert view |> element("#board")
+      # 7 columns
+      Enum.each(0..6, fn i ->
+        assert has_element?(view, "#column-#{i}")
+      end)
+    end
 
-    # 7 columns
-    Enum.each(0..6, fn i ->
-      assert has_element?(view, "#column-#{i}")
-    end)
-  end
+    test "players can drop discs", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/")
 
-  test "players can drop discs", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/")
+      assert view |> element("#cell-0-5") |> render() =~ "bg-black"
+      assert view |> element("#cell-1-5") |> render() =~ "bg-black"
 
-    assert view |> element("#cell-0-5") |> render() =~ "bg-black"
-    assert view |> element("#cell-1-5") |> render() =~ "bg-black"
+      view |> element("#column-0") |> render_click()
+      assert view |> element("#cell-0-5") |> render() =~ "bg-red-400"
 
-    view |> element("#column-0") |> render_click()
-    assert view |> element("#cell-0-5") |> render() =~ "bg-red-400"
+      view |> element("#column-1") |> render_click()
+      assert view |> element("#cell-1-5") |> render() =~ "bg-yellow-400"
+    end
 
-    view |> element("#column-1") |> render_click()
-    assert view |> element("#cell-1-5") |> render() =~ "bg-yellow-400"
-  end
+    test "player 1 can win", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/")
 
-  test "player 1 can win", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/")
+      view |> element("#column-0") |> render_click()
+      view |> element("#column-1") |> render_click()
+      view |> element("#column-0") |> render_click()
+      view |> element("#column-1") |> render_click()
+      view |> element("#column-0") |> render_click()
+      view |> element("#column-1") |> render_click()
+      view |> element("#column-0") |> render_click()
 
-    view |> element("#column-0") |> render_click()
-    view |> element("#column-1") |> render_click()
-    view |> element("#column-0") |> render_click()
-    view |> element("#column-1") |> render_click()
-    view |> element("#column-0") |> render_click()
-    view |> element("#column-1") |> render_click()
-    view |> element("#column-0") |> render_click()
+      assert view |> render() =~ "red wins!"
+    end
 
-    assert view |> render() =~ "red wins!"
-  end
+    test "player 2 can win", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/")
 
-  test "player 2 can win", %{conn: conn} do
-    {:ok, view, _html} = live(conn, "/")
+      view |> element("#column-0") |> render_click()
+      view |> element("#column-2") |> render_click()
+      view |> element("#column-1") |> render_click()
+      view |> element("#column-2") |> render_click()
+      view |> element("#column-0") |> render_click()
+      view |> element("#column-2") |> render_click()
+      view |> element("#column-1") |> render_click()
+      view |> element("#column-2") |> render_click()
 
-    view |> element("#column-0") |> render_click()
-    view |> element("#column-2") |> render_click()
-    view |> element("#column-1") |> render_click()
-    view |> element("#column-2") |> render_click()
-    view |> element("#column-0") |> render_click()
-    view |> element("#column-2") |> render_click()
-    view |> element("#column-1") |> render_click()
-    view |> element("#column-2") |> render_click()
-
-    assert view |> render() =~ "yellow wins!"
+      assert view |> render() =~ "yellow wins!"
+    end
   end
 
   describe "swiftui" do
