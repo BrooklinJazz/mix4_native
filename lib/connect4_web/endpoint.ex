@@ -1,12 +1,12 @@
 defmodule Connect4Web.Endpoint do
-  use Phoenix.Endpoint, otp_app: :lvn_tutorial
+  use Phoenix.Endpoint, otp_app: :connect4
 
   # The session will be stored in the cookie and signed,
   # this means its contents can be read but not tampered with.
   # Set :encryption_salt if you would also like to encrypt it.
   @session_options [
     store: :cookie,
-    key: "_lvn_tutorial_key",
+    key: "_connect4_key",
     signing_salt: "3OcC092n",
     same_site: "Lax"
   ]
@@ -19,7 +19,7 @@ defmodule Connect4Web.Endpoint do
   # when deploying your static files in production.
   plug Plug.Static,
     at: "/",
-    from: :lvn_tutorial,
+    from: :connect4,
     gzip: false,
     only: Connect4Web.static_paths()
 

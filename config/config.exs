@@ -8,7 +8,7 @@
 import Config
 
 # Configures the endpoint
-config :lvn_tutorial, Connect4Web.Endpoint,
+config :connect4, Connect4Web.Endpoint,
   url: [host: "localhost"],
   render_errors: [
     formats: [html: Connect4Web.ErrorHTML, json: Connect4Web.ErrorJSON],

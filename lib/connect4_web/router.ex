@@ -8,6 +8,7 @@ defmodule Connect4Web.Router do
     plug :put_root_layout, html: {Connect4Web.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug Connect4Web.Plugs.GuestPlayer
   end
 
   pipeline :api do
@@ -26,7 +27,7 @@ defmodule Connect4Web.Router do
   # end
 
   # Enable LiveDashboard in development
-  if Application.compile_env(:lvn_tutorial, :dev_routes) do
+  if Application.compile_env(:connect4, :dev_routes) do
     # If you want to use the LiveDashboard in production, you should put
     # it behind authentication and allow only admins to access it.
     # If your application does not have an admins-only section yet,

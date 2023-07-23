@@ -2,7 +2,7 @@ import Config
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
-config :lvn_tutorial, Connect4Web.Endpoint,
+config :connect4, Connect4Web.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "Iy3/+MlD8NItSkcW5ItLAyDUk6VRHnZ2D7MkCJLdvs3jkgVfNk5j8wSf4TcVfbbC",
   server: false

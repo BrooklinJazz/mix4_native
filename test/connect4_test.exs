@@ -88,7 +88,7 @@ defmodule Connect4Test do
         [nil, nil, nil, nil, nil, nil, nil]
       ]
 
-      assert Connect4.winner!(board) == nil
+      assert Connect4.winner(board) == nil
     end
 
     test "red column" do
@@ -101,7 +101,7 @@ defmodule Connect4Test do
         [nil, nil, nil, nil, nil, nil, nil]
       ]
 
-      assert Connect4.winner!(board) == :red
+      assert Connect4.winner(board) == :red
     end
 
     test "yellow row" do
@@ -114,7 +114,7 @@ defmodule Connect4Test do
         [nil, nil, nil, nil, nil, nil, nil]
       ]
 
-      assert Connect4.winner!(board) == :yellow
+      assert Connect4.winner(board) == :yellow
     end
 
     test "invalid due to multiple winners" do
@@ -128,7 +128,7 @@ defmodule Connect4Test do
       ]
 
       assert_raise RuntimeError, fn ->
-        Connect4.winner!(board)
+        Connect4.winner(board)
       end
     end
   end

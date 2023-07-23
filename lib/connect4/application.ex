@@ -12,10 +12,14 @@ defmodule Connect4.Application do
       Connect4Web.Telemetry,
       # Start the PubSub system
       {Phoenix.PubSub, name: Connect4.PubSub},
+      Connect4Web.Presence,
       # Start the Endpoint (http/https)
-      Connect4Web.Endpoint
+      Connect4Web.Endpoint,
       # Start a worker by calling: Connect4.Worker.start_link(arg)
       # {Connect4.Worker, arg}
+      {DynamicSupervisor, name: Connect4.GameSupervisor},
+      {Connect4.GameQueue, []},
+      {Registry, [keys: :unique, name: Connect4.GameRegistry]}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

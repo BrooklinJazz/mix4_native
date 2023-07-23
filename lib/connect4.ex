@@ -43,7 +43,7 @@ defmodule Connect4 do
 
   def transpose(board), do: board |> Enum.zip() |> Enum.map(&Tuple.to_list/1)
 
-  def winner!(board) do
+  def winner(board) do
     colors =
       winners(board)
       |> List.flatten()
@@ -58,6 +58,14 @@ defmodule Connect4 do
   end
 
   def winners(board) do
+    # winner_list = check_rows(board) ++ check_columns(board) ++ check_diagonals(board)
+    # Enum.filter(winner_list, & &1)
+
+    # []
+    # |> check_rows(board)
+    # |> check_columns(board)
+    # |> check_diagonals(board)
+
     []
     |> Kernel.++(check_rows(board))
     |> Kernel.++(check_columns(board))
