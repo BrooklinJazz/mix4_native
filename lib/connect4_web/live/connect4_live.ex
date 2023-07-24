@@ -1,23 +1,29 @@
 defmodule Connect4Web.Connect4Live do
   use Connect4Web, :live_view
   use LiveViewNative.LiveView
-  alias Connect4.GameQueue
-  alias Connect4.Game
+  alias Connect4.GamesServer
+  alias Connect4.Games.Game
+  alias Connect4.Games.Board
 
   @impl true
   def mount(_params, session, socket) do
-    if connected?(socket) do
-      Phoenix.PubSub.subscribe(Connect4.PubSub, "lobby")
+    current_player = session["current_player"]
+    games_server_pid = session["game_server_pid"] || GamesServer
+    game = GamesServer.find_game(games_server_pid, current_player)
+
+    if game do
+      Phoenix.PubSub.subscribe(Connect4.PubSub, "game:#{game.id}")
     end
 
-    current_player = session["current_player"]
+    Phoenix.PubSub.subscribe(Connect4.PubSub, "player:#{current_player.id}")
 
     socket =
       socket
-      |> assign(:game, nil)
+      |> assign(:game, game)
       |> assign(:platform_id, session["platform_id"] || socket.assigns.platform_id)
       |> assign(:current_player, current_player)
-      |> assign(:status, :idle)
+      # set for testing purposes
+      |> assign(:games_server_pid, games_server_pid)
 
     {:ok, socket}
   end
@@ -25,18 +31,19 @@ defmodule Connect4Web.Connect4Live do
   @impl true
   def render(%{platform_id: :web} = assigns) do
     ~H"""
-    <p><%= IO.inspect(@current_player).name %></p>
-    <%= case @status do %>
-      <% :winner -> %>
+    <%= cond do %>
+      <% @game == nil -> %>
+        <h1><%= @current_player.name %></h1>
+        <.button id="play-online" phx-click="play-online">Play Online</.button>
+        <.button id="player-vs-player" phx-click="play-vs-player">Player vs Player</.button>
+        <.button id="player-vs-ai" phx-click="play-vs-ai">Player vs AI</.button>
+      <% Game.winner(@game) == @current_player -> %>
         <h1>You win!</h1>
-      <% :loser -> %>
+      <% Game.winner(@game) && Game.winner(@game)  != @current_player -> %>
         <h1>You lose...</h1>
-      <% :waiting -> %>
-        <h1>Waiting for opponent</h1>
-      <% :playing -> %>
-        <h1 id="opponent">Opponent: <%= @opponent.name %></h1>
+      <% @game -> %>
         <section id="board" class="flex h-screen w-full gap-x-2 items-center justify-center">
-          <%= for {column, x} <- Enum.with_index(Connect4.transpose(@game.board)) do %>
+          <%= for {column, x} <- Enum.with_index(Board.transpose(Game.board(@game))) do %>
             <article
               id={"column-#{x}"}
               phx-click="drop"
@@ -53,10 +60,6 @@ defmodule Connect4Web.Connect4Live do
             </article>
           <% end %>
         </section>
-      <% _ -> %>
-        <.button id="play-online" phx-click="play-online">Play Online</.button>
-        <.button id="player-vs-player" phx-click="play-vs-player">Player vs Player</.button>
-        <.button id="player-vs-ai" phx-click="play-vs-ai">Player vs AI</.button>
     <% end %>
     """
   end
@@ -93,40 +96,26 @@ defmodule Connect4Web.Connect4Live do
   end
 
   def handle_event("drop", %{"column" => column}, socket) do
-    IO.inspect(column, label: "DROPPING")
-    Game.drop(socket.assigns.game_pid, socket.assigns.current_player, String.to_integer(column))
+    updated_game =
+      Game.drop(socket.assigns.game, socket.assigns.current_player, String.to_integer(column))
+
+    GamesServer.update(socket.assigns.games_server_pid, updated_game)
     {:noreply, socket}
   end
 
   def handle_event("play-online", _params, socket) do
-    GameQueue.join(socket.assigns.current_player)
-    {:noreply, assign(socket, :status, :waiting)}
+    GamesServer.join(socket.assigns.games_server_pid, socket.assigns.current_player)
+    {:noreply, socket}
   end
 
   @impl true
-  def handle_info({:game_started, pid}, socket) do
-    opponent = Game.opponent(pid, socket.assigns.current_player)
-    game = Game.game(pid)
+  def handle_info({:game_started, game}, socket) do
+    Phoenix.PubSub.subscribe(Connect4.PubSub, "game:#{game.id}")
 
-    {:noreply,
-     socket
-     |> assign(:status, :playing)
-     |> assign(:game, game)
-     |> assign(:game_pid, pid)
-     |> assign(:opponent, opponent)}
+    {:noreply, assign(socket, :game, game)}
   end
 
   def handle_info({:game_updated, game}, socket) do
-    current_player = socket.assigns.current_player
-    opponent = socket.assigns.opponent
-
-    socket =
-      case game.winner do
-        ^current_player -> assign(socket, :status, :winner)
-        ^opponent -> assign(socket, :status, :loser)
-        _ -> socket
-      end
-
     {:noreply, assign(socket, :game, game)}
   end
 

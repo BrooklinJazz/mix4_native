@@ -18,7 +18,7 @@ defmodule Connect4.Application do
       # Start a worker by calling: Connect4.Worker.start_link(arg)
       # {Connect4.Worker, arg}
       {DynamicSupervisor, name: Connect4.GameSupervisor},
-      {Connect4.GameQueue, []},
+      {Connect4.GamesServer, []},
       {Registry, [keys: :unique, name: Connect4.GameRegistry]}
     ]
 
