@@ -4,8 +4,7 @@ defmodule Connect4Web.Connect4LiveTest do
   alias Connect4.Games.Game
   alias Connect4.Games.Player
   # run tests with $PLATFORM_ID=swiftui to test on swift.
-  @platform_id if System.get_env("PLATFORM_ID"),
-                 do: String.to_atom(System.get_env("PLATFORM_ID")) || :web
+  @platform_id String.to_atom(System.get_env("PLATFORM_ID") || "web")
 
   test "web _ connected mount", %{conn: conn} do
     {:ok, _view, html} = live(conn, "/")
