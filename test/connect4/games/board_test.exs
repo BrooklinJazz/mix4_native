@@ -77,6 +77,29 @@ defmodule Connect4.Games.BoardTest do
     end
   end
 
+  test "drop_index/2 empty board" do
+    board = Board.new()
+    assert Board.drop_index(board, 0) == 5
+  end
+
+  test "drop_index/2 one row filled board" do
+    board = Board.drop(Board.new(), 0, :red)
+    assert Board.drop_index(board, 0) == 4
+  end
+
+  test "drop_index/2 full board" do
+    board =
+      Board.new()
+      |> Board.drop(0, :red)
+      |> Board.drop(0, :red)
+      |> Board.drop(0, :red)
+      |> Board.drop(0, :red)
+      |> Board.drop(0, :red)
+      |> Board.drop(0, :red)
+
+    assert Board.drop_index(board, 0) == -1
+  end
+
   describe "winner/1" do
     test "no winner" do
       board = [

@@ -8,7 +8,7 @@ defmodule Connect4.Games.Game do
     player1: nil,
     player2: nil,
     board: Board.new(),
-    current_player: nil
+    current_turn: nil
   ]
 
   def new(playera, playerb) do
@@ -18,15 +18,15 @@ defmodule Connect4.Games.Game do
       id: Ecto.UUID.autogenerate(),
       player1: player1,
       player2: player2,
-      current_player: player1
+      current_turn: player1
     }
   end
 
   def board(%__MODULE__{} = game), do: game.board
-  def current_player(%__MODULE__{} = game), do: game.current_player
+  def current_turn(%__MODULE__{} = game), do: game.current_turn
 
   def drop(%__MODULE__{} = game, player, column_index) do
-    if game.current_player == player do
+    if game.current_turn == player do
       board = Board.drop(game.board, column_index, marker(game, player))
 
       game_winner =
@@ -36,7 +36,7 @@ defmodule Connect4.Games.Game do
           :yellow -> game.player2
         end
 
-      %__MODULE__{game | board: board, current_player: next_player(game), winner: game_winner}
+      %__MODULE__{game | board: board, current_turn: next_player(game), winner: game_winner}
     else
       game
     end
@@ -49,8 +49,8 @@ defmodule Connect4.Games.Game do
     end
   end
 
-  def next_player(%__MODULE__{player1: player1, player2: player2, current_player: current_player}) do
-    case current_player do
+  def next_player(%__MODULE__{player1: player1, player2: player2, current_turn: current_turn}) do
+    case current_turn do
       ^player1 -> player2
       ^player2 -> player1
     end

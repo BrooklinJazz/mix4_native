@@ -53,4 +53,18 @@ defmodule Connect4.GamesTest do
     %Games{} = games = Games.update(games, updated_game)
     assert Games.find_game(games, playera) == updated_game
   end
+
+  test "waiting?/2" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+
+    games = Games.new()
+    refute Games.waiting?(games, playera)
+    refute Games.waiting?(games, playerb)
+    games = Games.join(games, playera)
+    assert Games.waiting?(games, playera)
+    games = Games.join(games, playerb)
+    refute Games.waiting?(games, playera)
+    refute Games.waiting?(games, playerb)
+  end
 end

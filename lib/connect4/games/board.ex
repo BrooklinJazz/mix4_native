@@ -41,6 +41,8 @@ defmodule Connect4.Games.Board do
     end
   end
 
+  def drop_index(board, x), do: Enum.count(column(board, x), &is_nil/1) - 1
+
   def transpose(board), do: board |> Enum.zip() |> Enum.map(&Tuple.to_list/1)
 
   def winner(board) do
@@ -110,7 +112,7 @@ defmodule Connect4.Games.Board do
   defp walk(:up_right, {x, y}), do: {x + 1, y - 1}
   defp walk(:down_right, {x, y}), do: {x + 1, y + 1}
 
-  defp count_nils(board, column_index), do: Enum.count(column(board, column_index), &is_nil/1)
+  defp count_nils(board, x), do: Enum.count(column(board, x), &is_nil/1)
 
   defp column(board, column_index) do
     Enum.reduce(board, [], fn row, acc ->

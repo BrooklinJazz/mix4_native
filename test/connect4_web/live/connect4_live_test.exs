@@ -3,7 +3,8 @@ defmodule Connect4Web.Connect4LiveTest do
   alias Connect4.GamesServer
   alias Connect4.Games.Game
   alias Connect4.Games.Player
-  # run tests with $PLATFORM_ID=swiftui to test on swift.
+  # run the following command to test on swift
+  # PLATFORM_ID=swiftui mix test --exclude=web
   @platform_id String.to_atom(System.get_env("PLATFORM_ID") || "web")
 
   test "web _ connected mount", %{conn: conn} do
@@ -12,62 +13,7 @@ defmodule Connect4Web.Connect4LiveTest do
     assert html =~ "Connect4"
   end
 
-  # describe "web _ local game" do
-  #   test "start local game", %{conn: conn} do
-  #     {:ok, view, _html} = live(conn, "/")
-
-  #     refute element(view, "#board")
-  #     assert view |> element("#player-vs-player") |> render_click()
-  #     assert element(view, "#board")
-  #   end
-
-  #   test "local players can drop discs", %{conn: conn} do
-  #     {:ok, view, _html} = live(conn, "/")
-
-  #     assert view |> element("#player-vs-player") |> render_click()
-  #     assert view |> element("#cell-0-5") |> render() =~ "black"
-  #     assert view |> element("#cell-1-5") |> render() =~ "black"
-
-  #     view |> element("#column-0") |> render_click()
-  #     assert view |> element("#cell-0-5") |> render() =~ "red"
-
-  #     view |> element("#column-1") |> render_click()
-  #     assert view |> element("#cell-1-5") |> render() =~ "yellow"
-  #   end
-
-  #   test "player 1 can win", %{conn: conn} do
-  #     conn = Plug.Test.init_test_session(conn, current_player: Player.new(id: "1", name: "name1"))
-  #     {:ok, view, _html} = live(conn, "/")
-
-  #     assert view |> element("#player-vs-player") |> render_click()
-  #     view |> element("#column-0") |> render_click()
-  #     view |> element("#column-1") |> render_click()
-  #     view |> element("#column-0") |> render_click()
-  #     view |> element("#column-1") |> render_click()
-  #     view |> element("#column-0") |> render_click()
-  #     view |> element("#column-1") |> render_click()
-  #     view |> element("#column-0") |> render_click()
-
-  #     assert view |> render() =~ "name1 wins!"
-  #   end
-
-  #   test "player 2 can win", %{conn: conn} do
-  #     {:ok, view, _html} = live(conn, "/")
-
-  #     view |> element("#column-0") |> render_click()
-  #     view |> element("#column-2") |> render_click()
-  #     view |> element("#column-1") |> render_click()
-  #     view |> element("#column-2") |> render_click()
-  #     view |> element("#column-0") |> render_click()
-  #     view |> element("#column-2") |> render_click()
-  #     view |> element("#column-1") |> render_click()
-  #     view |> element("#column-2") |> render_click()
-
-  #     assert view |> render() =~ "yellow wins!"
-  #   end
-  # end
-
-  describe "web _ online game" do
+  describe "web _ two player online game" do
     setup %{conn: conn} do
       playera = Player.new(id: "a", name: "namea")
       playerb = Player.new(id: "b", name: "nameb")
@@ -99,7 +45,7 @@ defmodule Connect4Web.Connect4LiveTest do
       refute has_element?(view2, "#board")
 
       view1 |> element("#play-online") |> render_click()
-      # assert view1 |> render() =~ "Waiting for opponent"
+      assert view1 |> render() =~ "Waiting for opponent"
       view2 |> element("#play-online") |> render_click()
 
       assert has_element?(view1, "#board")
@@ -134,6 +80,36 @@ defmodule Connect4Web.Connect4LiveTest do
 
       assert view1 |> element("#cell-1-5") |> render() =~ "yellow"
       assert view2 |> element("#cell-1-5") |> render() =~ "yellow"
+    end
+
+    test "display players turn", %{
+      conna: conna,
+      connb: connb,
+      playera: playera,
+      playerb: playerb,
+      games_server: games_server
+    } do
+      {:ok, viewa, _html} = live(conna, "/")
+      {:ok, viewb, _html} = live(connb, "/")
+
+      viewa |> element("#play-online") |> render_click()
+      viewb |> element("#play-online") |> render_click()
+
+      assert %Game{} = game = GamesServer.find_game(games_server, playera)
+
+      {view1, view2} =
+        case Game.player1(game) do
+          ^playera -> {viewa, viewb}
+          ^playerb -> {viewb, viewa}
+        end
+
+      assert has_element?(view1, "#your-turn")
+      assert has_element?(view2, "#opponent-turn")
+
+      view1 |> element("#column-0") |> render_click()
+
+      assert has_element?(view1, "#opponent-turn")
+      assert has_element?(view2, "#your-turn")
     end
 
     test "player wins", %{
@@ -181,6 +157,33 @@ defmodule Connect4Web.Connect4LiveTest do
 
       {:ok, view2, _html} = live(connb, "/")
       assert has_element?(view2, "#board")
+    end
+
+    @tag :web
+    test "hover styles", %{
+      conna: conna,
+      connb: connb,
+      playera: playera,
+      playerb: playerb,
+      games_server: games_server
+    } do
+      {:ok, viewa, _html} = live(conna, "/")
+      {:ok, viewb, _html} = live(connb, "/")
+
+      viewa |> element("#play-online") |> render_click()
+      viewb |> element("#play-online") |> render_click()
+
+      assert %Game{} = game = GamesServer.find_game(games_server, playera)
+
+      {view1, view2} =
+        case Game.player1(game) do
+          ^playera -> {viewa, viewb}
+          ^playerb -> {viewb, viewa}
+        end
+
+      assert view1 |> element("#cell-0-5") |> render() =~ "group-hover:bg-red-500"
+      view1 |> element("#column-0") |> render_click()
+      assert view2 |> element("#cell-1-5") |> render() =~ "group-hover:bg-yellow-500"
     end
   end
 end
