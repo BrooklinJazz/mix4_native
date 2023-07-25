@@ -102,10 +102,12 @@ jobs:
       # - name: Credo Check
       #   run: mix credo
 
-      - name: Run tests
+      - name: Run Web Tests
+        env: 
+          PLATFORM_ID: "web"
         run: mix test
 
-      - name: Print name
+      - name: Run Native Tests
         env: 
-          NAME: "World"
-        run: echo "Hello $NAME"
+          PLATFORM_ID: "swiftui"
+        run: mix test
