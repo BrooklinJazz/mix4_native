@@ -4,7 +4,7 @@ defmodule Connect4.Games.BoardTest do
 
   alias Connect4.Games.Board
 
-  test "initial_board/0" do
+  test "new/0" do
     assert Board.new() == [
              [nil, nil, nil, nil, nil, nil, nil],
              [nil, nil, nil, nil, nil, nil, nil],

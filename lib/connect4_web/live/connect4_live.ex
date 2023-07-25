@@ -68,29 +68,26 @@ defmodule Connect4Web.Connect4Live do
   def render(%{platform_id: :swiftui} = assigns) do
     ~SWIFTUI"""
     <Section>
-      <%= case @status do %>
-        <% :winner -> %>
-          <Text>You win!</Text>
-        <% :loser -> %>
-          <Text>You lose...</Text>
-        <% :waiting -> %>
-          <Text>Waiting for opponent</Text>
-        <% :playing -> %>
-          <Text id="opponent">Opponent: <%= @opponent.name %></Text>
-          <HStack id="board">
-            <%= for {column, x} <- Enum.with_index(Connect4.transpose(@game.board)) do %>
-              <VStack id={"column-#{x}"} phx-click="drop" phx-value-column={x}>
-                <%= for {cell, y} <- Enum.with_index(column) do %>
-                  <Circle id={"cell-#{x}-#{y}"} data-color={cell} fill-color={platform_color(:swiftui, cell)} />
-                <% end %>
-              </VStack>
-            <% end %>
-          </HStack>
-        <% _ -> %>
-          <Button id="play-online" phx-click="play-online">Play Online</Button>
-          <Button id="player-vs-player" phx-click="play-vs-player">Player vs Player</Button>
-          <Button id="player-vs-ai" phx-click="play-vs-ai">Player vs AI</Button>
-      <% end %>
+    <%= cond do %>
+      <% @game == nil -> %>
+        <Button id="play-online" phx-click="play-online">Play Online</Button>
+        <Button id="player-vs-player" phx-click="play-vs-player">Player vs Player</Button>
+        <Button id="player-vs-ai" phx-click="play-vs-ai">Player vs AI</Button>
+      <% Game.winner(@game) == @current_player -> %>
+        <Text>You win!</Text>
+      <% Game.winner(@game) && Game.winner(@game)  != @current_player -> %>
+        <Text>You lose...</Text>
+      <% @game -> %>
+        <HStack id="board">
+          <%= for {column, x} <- Enum.with_index(Board.transpose(Game.board(@game))) do %>
+            <VStack id={"column-#{x}"} phx-click="drop" phx-value-column={x}>
+              <%= for {cell, y} <- Enum.with_index(column) do %>
+                <Circle id={"cell-#{x}-#{y}"} data-color={cell} fill-color={platform_color(:swiftui, cell)} />
+              <% end %>
+            </VStack>
+          <% end %>
+        </HStack>
+    <% end %>
     </Section>
     """
   end
