@@ -24,6 +24,10 @@ defmodule Connect4.GamesServer do
     GenServer.call(pid, {:update, updated_game})
   end
 
+  def waiting?(pid \\ __MODULE__, player) do
+    GenServer.call(pid, {:waiting, player})
+  end
+
   def handle_call({:find_game, player}, _from, games) do
     {:reply, Games.find_game(games, player), games}
   end
@@ -55,6 +59,10 @@ defmodule Connect4.GamesServer do
     )
 
     {:reply, :ok, Games.update(games, updated_game)}
+  end
+
+  def handle_call({:waiting, player}, _from, games) do
+    {:reply, Games.waiting?(games, player), games}
   end
 
   defp broadcast_new_game(new_game) do

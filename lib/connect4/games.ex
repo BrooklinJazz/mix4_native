@@ -34,4 +34,8 @@ defmodule Connect4.Games do
   def update(%__MODULE__{active_games: active_games} = games, %Game{} = game) do
     %__MODULE__{games | active_games: Map.put(active_games, game.id, game)}
   end
+
+  def waiting?(%__MODULE__{queue: queue}, %Player{} = player) do
+    player in queue
+  end
 end

@@ -109,11 +109,11 @@ defmodule Connect4.Games.GameTest do
            |> Game.winner() == player1
   end
 
-  test "current_player/1" do
+  test "current_turn/1" do
     playera = Player.new(id: "a")
     playerb = Player.new(id: "b")
     game = Game.new(playera, playerb)
-    assert Game.current_player(game) == Game.player1(game)
+    assert Game.current_turn(game) == Game.player1(game)
   end
 
   test "next_player/1" do

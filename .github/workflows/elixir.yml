@@ -105,9 +105,9 @@ jobs:
       - name: Run Web Tests
         env: 
           PLATFORM_ID: "web"
-        run: mix test
+        run: mix test --exclude=swiftui
 
       - name: Run Native Tests
         env: 
           PLATFORM_ID: "swiftui"
-        run: mix test
+        run: mix test --exclude=web

@@ -80,4 +80,20 @@ defmodule Connect4.GamesServerTest do
 
     assert_receive {:game_updated, ^updated_game}
   end
+
+  test "waiting?/2" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+    {:ok, pid} = GamesServer.start_link(name: nil)
+
+    refute GamesServer.waiting?(pid, playera)
+    refute GamesServer.waiting?(pid, playerb)
+
+    GamesServer.join(pid, playera)
+    assert GamesServer.waiting?(pid, playera)
+
+    GamesServer.join(pid, playerb)
+    refute GamesServer.waiting?(pid, playera)
+    refute GamesServer.waiting?(pid, playerb)
+  end
 end
