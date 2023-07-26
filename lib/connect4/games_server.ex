@@ -33,21 +33,16 @@ defmodule Connect4.GamesServer do
   end
 
   def handle_call({:join, player}, _from, games) do
-    existing_game = Games.find_game(games, player)
-    updated_games = Games.join(games, player)
-    new_game = Games.find_game(updated_games, player)
+    case Games.join(games, player) do
+      {:enqueued, games} ->
+        {:reply, :ok, games}
 
-    cond do
-      existing_game ->
+      {:ignored, games} ->
         {:reply, :error, games}
 
-      new_game ->
-        broadcast_new_game(new_game)
-
-        {:reply, :ok, updated_games}
-
-      true ->
-        {:reply, :ok, updated_games}
+      {:game_started, games} ->
+        broadcast_new_game(Games.find_game(games, player))
+        {:reply, :ok, games}
     end
   end
 

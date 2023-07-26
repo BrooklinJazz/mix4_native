@@ -42,6 +42,8 @@ defmodule Connect4.Games.Game do
     end
   end
 
+  def finished?(%__MODULE__{} = game), do: game.winner != nil
+
   def marker(%__MODULE__{player1: player1, player2: player2}, player) do
     case player do
       ^player1 -> :red
@@ -58,6 +60,13 @@ defmodule Connect4.Games.Game do
 
   def player1(%__MODULE__{} = game), do: game.player1
   def player2(%__MODULE__{} = game), do: game.player2
+
+  def opponent(%__MODULE__{player1: player1, player2: player2}, current_player) do
+    case current_player do
+      ^player1 -> player2
+      ^player2 -> player1
+    end
+  end
 
   def winner(%__MODULE__{} = game), do: game.winner
 end

@@ -33,6 +33,26 @@ defmodule Connect4.GamesServerTest do
     assert GamesServer.join(pid, playerb) == :error
   end
 
+  test "join/2 remove game after player wins" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+    {:ok, pid} = GamesServer.start_link(name: nil)
+
+    assert GamesServer.join(pid, playera) == :ok
+    assert GamesServer.join(pid, playerb) == :ok
+
+    game = GamesServer.find_game(pid, playera)
+    GamesServer.update(pid, %Game{game | winner: playera})
+
+    GamesServer.join(pid, playera)
+    refute GamesServer.find_game(pid, playera)
+    refute GamesServer.find_game(pid, playerb)
+
+    GamesServer.join(pid, playerb)
+    assert GamesServer.find_game(pid, playera)
+    assert GamesServer.find_game(pid, playerb)
+  end
+
   test "join/2 broadcast message to subscribers of game start" do
     playera = Player.new(id: "a", name: "playera")
     playerb = Player.new(id: "b", name: "playerb")
