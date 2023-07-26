@@ -39,12 +39,12 @@ defmodule Connect4Web.Connect4Live do
       <% @game == nil -> %>
         <p><%= @current_player.name %></p>
         <.button id="play-online" phx-click="play-online">Play Online</.button>
-        <.button id="player-vs-player" phx-click="play-vs-player">Player vs Player</.button>
-        <.button id="player-vs-ai" phx-click="play-vs-ai">Player vs AI</.button>
       <% Game.winner(@game) == @current_player -> %>
         <p>You win!</p>
+        <.button id="play-online" phx-click="play-online">Play Online</.button>
       <% Game.winner(@game) && Game.winner(@game)  != @current_player -> %>
         <p>You lose...</p>
+        <.button id="play-online" phx-click="play-online">Play Online</.button>
       <% @game -> %>
         <%= if @current_player == Game.current_turn(@game) do %>
           <p id="your-turn">Your turn</p>
@@ -82,12 +82,12 @@ defmodule Connect4Web.Connect4Live do
         <Text>Waiting for opponent</Text>
       <% @game == nil -> %>
         <Button id="play-online" phx-click="play-online">Play Online</Button>
-        <Button id="player-vs-player" phx-click="play-vs-player">Player vs Player</Button>
-        <Button id="player-vs-ai" phx-click="play-vs-ai">Player vs AI</Button>
       <% Game.winner(@game) == @current_player -> %>
         <Text>You win!</Text>
+        <Button id="play-online" phx-click="play-online">Play Online</Button>
       <% Game.winner(@game) && Game.winner(@game)  != @current_player -> %>
         <Text>You lose...</Text>
+        <Button id="play-online" phx-click="play-online">Play Online</Button>
       <% @game -> %>
         <%= if @current_player == Game.current_turn(@game) do %>
           <Text id="your-turn">Your turn</Text>
@@ -107,7 +107,6 @@ defmodule Connect4Web.Connect4Live do
     </Section>
     """
   end
-
 
   def handle_event("drop", %{"column" => column}, socket) do
     updated_game =
@@ -133,7 +132,6 @@ defmodule Connect4Web.Connect4Live do
     {:noreply, assign(socket, :game, game)}
   end
 
-
   defp platform_color(:web, cell) do
     case cell do
       :red -> "bg-red-400"
@@ -151,7 +149,9 @@ defmodule Connect4Web.Connect4Live do
   end
 
   defp hover_styles(game, current_player, x, y) do
-    should_display_hover_styles = Board.drop_index(game.board, x) == y && Game.current_turn(game) == current_player
+    should_display_hover_styles =
+      Board.drop_index(game.board, x) == y && Game.current_turn(game) == current_player
+
     if should_display_hover_styles do
       "#{hover_color(game, current_player)} group-hover:opacity-50"
     else

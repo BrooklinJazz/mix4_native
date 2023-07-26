@@ -5,16 +5,6 @@ defmodule Connect4.Games.GameTest do
   alias Connect4.Games.Game
   alias Connect4.Games.Player
 
-  test "new/2 start game randomly selects player1 and player2" do
-    playera = Player.new(id: "a")
-    playerb = Player.new(id: "b")
-    assert %Game{} = game = Game.new(playera, playerb)
-    assert game.id
-    assert game.player1 in [playera, playerb]
-    assert game.player2 in [playera, playerb]
-    assert game.board == Board.new()
-  end
-
   test "board/1" do
     playera = Player.new(id: "a")
     playerb = Player.new(id: "b")
@@ -22,24 +12,16 @@ defmodule Connect4.Games.GameTest do
     assert Game.board(game) == Board.new()
   end
 
-  test "player#/1" do
-    playera = Player.new(id: "a")
-    playerb = Player.new(id: "b")
-    game = Game.new(playera, playerb)
-    assert Game.player1(game) in [playera, playerb]
-    assert Game.player2(game) in [playera, playerb]
-    assert Game.player1(game) != Game.player2(game)
+  test "finished?/1" do
+    game = %Game{winner: Player.new(id: "a")}
+    assert Game.finished?(game)
   end
 
-  test "marker/2 player1 is red" do
+  test "current_turn/1" do
     playera = Player.new(id: "a")
     playerb = Player.new(id: "b")
     game = Game.new(playera, playerb)
-
-    player1 = Game.player1(game)
-    player2 = Game.player2(game)
-    assert Game.marker(game, player1) == :red
-    assert Game.marker(game, player2) == :yellow
+    assert Game.current_turn(game) == Game.player1(game)
   end
 
   test "drop/3 drop player1 marker" do
@@ -109,11 +91,23 @@ defmodule Connect4.Games.GameTest do
            |> Game.winner() == player1
   end
 
-  test "current_turn/1" do
+  test "player#/1" do
     playera = Player.new(id: "a")
     playerb = Player.new(id: "b")
     game = Game.new(playera, playerb)
-    assert Game.current_turn(game) == Game.player1(game)
+    assert Game.player1(game) in [playera, playerb]
+    assert Game.player2(game) in [playera, playerb]
+    assert Game.player1(game) != Game.player2(game)
+  end
+
+  test "new/2 start game randomly selects player1 and player2" do
+    playera = Player.new(id: "a")
+    playerb = Player.new(id: "b")
+    assert %Game{} = game = Game.new(playera, playerb)
+    assert game.id
+    assert game.player1 in [playera, playerb]
+    assert game.player2 in [playera, playerb]
+    assert game.board == Board.new()
   end
 
   test "next_player/1" do
@@ -121,5 +115,16 @@ defmodule Connect4.Games.GameTest do
     playerb = Player.new(id: "b")
     game = Game.new(playera, playerb)
     assert Game.next_player(game) == Game.player2(game)
+  end
+
+  test "marker/2 player1 is red" do
+    playera = Player.new(id: "a")
+    playerb = Player.new(id: "b")
+    game = Game.new(playera, playerb)
+
+    player1 = Game.player1(game)
+    player2 = Game.player2(game)
+    assert Game.marker(game, player1) == :red
+    assert Game.marker(game, player2) == :yellow
   end
 end

@@ -9,14 +9,31 @@ defmodule Connect4.Games do
     %__MODULE__{}
   end
 
-  def join(%__MODULE__{queue: []} = games, %Player{} = player) do
-    %__MODULE__{games | queue: [player]}
-  end
+  def join(%__MODULE__{} = games, %Player{} = player) do
+    existing_game = find_game(games, player)
 
-  def join(%__MODULE__{queue: [playera], active_games: active_games} = games, %Player{} = playerb) do
-    [player1, player2] = Enum.shuffle([playera, playerb])
-    game = Game.new(player1, player2)
-    %__MODULE__{games | queue: [], active_games: Map.put(active_games, game.id, game)}
+    cond do
+      existing_game && Game.finished?(existing_game) ->
+        active_games = Map.delete(games.active_games, existing_game.id)
+        join(%__MODULE__{games | active_games: active_games}, player)
+
+      # ignore if player is already in a game
+      existing_game ->
+        {:ignored, games}
+
+      Enum.any?(games.queue) ->
+        game = Game.new(player, hd(games.queue))
+
+        games =
+          games
+          |> Map.put(:queue, tl(games.queue))
+          |> Map.put(:active_games, Map.put(games.active_games, game.id, game))
+
+        {:game_started, games}
+
+      Enum.empty?(games.queue) ->
+        {:enqueued, %__MODULE__{games | queue: [player]}}
+    end
   end
 
   def queue(%__MODULE__{queue: queue}), do: queue
