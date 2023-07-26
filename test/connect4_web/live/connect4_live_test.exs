@@ -104,11 +104,11 @@ defmodule Connect4Web.Connect4LiveTest do
         end
 
       assert has_element?(view1, "#your-turn")
-      assert has_element?(view2, "#opponent-turn")
+      assert has_element?(view2, "#opponents-turn")
 
       view1 |> element("#column-0") |> render_click()
 
-      assert has_element?(view1, "#opponent-turn")
+      assert has_element?(view1, "#opponents-turn")
       assert has_element?(view2, "#your-turn")
     end
 

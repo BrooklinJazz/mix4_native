@@ -12,11 +12,6 @@ defmodule Connect4.Games.GameTest do
     assert Game.board(game) == Board.new()
   end
 
-  test "finished?/1" do
-    game = %Game{winner: Player.new(id: "a")}
-    assert Game.finished?(game)
-  end
-
   test "current_turn/1" do
     playera = Player.new(id: "a")
     playerb = Player.new(id: "b")
@@ -89,6 +84,20 @@ defmodule Connect4.Games.GameTest do
            |> Game.drop(player2, 1)
            |> Game.drop(player1, 0)
            |> Game.winner() == player1
+  end
+
+  test "finished?/1" do
+    game = %Game{winner: Player.new(id: "a")}
+    assert Game.finished?(game)
+  end
+
+  test "opponent/2" do
+    playera = Player.new(id: "a")
+    playerb = Player.new(id: "b")
+    game = Game.new(playera, playerb)
+
+    assert Game.opponent(game, playera) == playerb
+    assert Game.opponent(game, playerb) == playera
   end
 
   test "player#/1" do
