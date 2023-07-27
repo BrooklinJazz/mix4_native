@@ -221,5 +221,33 @@ defmodule Connect4Web.Connect4LiveTest do
       assert has_element?(view1, "#board")
       assert has_element?(view2, "#board")
     end
+
+    test "quit", %{
+      conna: conna,
+      connb: connb,
+      playera: playera,
+      playerb: playerb,
+      games_server: games_server
+    } do
+      {:ok, viewa, _html} = live(conna, "/")
+      {:ok, viewb, _html} = live(connb, "/")
+
+      viewa |> element("#play-online") |> render_click()
+      viewb |> element("#play-online") |> render_click()
+
+      assert %Game{} = game = GamesServer.find_game(games_server, playera)
+
+      {view1, view2} =
+        case Game.player1(game) do
+          ^playera -> {viewa, viewb}
+          ^playerb -> {viewb, viewa}
+        end
+
+      assert has_element?(view1, "#board")
+      assert has_element?(view2, "#board")
+      view1 |> element("#quit-game") |> render_click()
+      refute has_element?(view1, "#board")
+      refute has_element?(view2, "#board")
+    end
   end
 end

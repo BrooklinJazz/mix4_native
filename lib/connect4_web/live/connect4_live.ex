@@ -64,17 +64,12 @@ defmodule Connect4Web.Connect4Live do
             </article>
           </div>
       <% end %>
+      <%= if @game do %>
+        <.button id="quit-game" phx-click="quit">Quit</.button>
+      <% end %>
     </section>
     """
   end
-
-  # <div class="flex pt-4">
-  #   <%= if @current_player == Game.current_turn(@game) do %>
-  #     <p class={"#{player_color(@game, @current_player)} text-center text-2xl"} id="your-turn"}>Your turn</p>
-  #   <% else %>
-  #     <p class={"#{opponent_color(@game, @current_player)} text-center text-2xl"} id="your-turn"}>Opponents turn</p>
-  #   <% end %>
-  # </div>
 
   @impl true
   def render(%{platform_id: :swiftui} = assigns) do
@@ -124,6 +119,11 @@ defmodule Connect4Web.Connect4Live do
     {:noreply, assign(socket, :waiting, true)}
   end
 
+  def handle_event("quit", _params, socket) do
+    GamesServer.quit(socket.assigns.games_server_pid, socket.assigns.current_player)
+    {:noreply, assign(socket, waiting: false, game: nil)}
+  end
+
   @impl true
   def handle_info({:game_started, game}, socket) do
     Phoenix.PubSub.subscribe(Connect4.PubSub, "game:#{game.id}")
@@ -133,6 +133,10 @@ defmodule Connect4Web.Connect4Live do
 
   def handle_info({:game_updated, game}, socket) do
     {:noreply, assign(socket, :game, game)}
+  end
+
+  def handle_info(:game_quit, socket) do
+    {:noreply, assign(socket, :game, nil)}
   end
 
   defp board(assigns) do

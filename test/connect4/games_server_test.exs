@@ -116,4 +116,33 @@ defmodule Connect4.GamesServerTest do
     refute GamesServer.waiting?(pid, playera)
     refute GamesServer.waiting?(pid, playerb)
   end
+
+  test "quit/3" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+    {:ok, pid} = GamesServer.start_link(name: nil)
+
+    GamesServer.join(pid, playera)
+    GamesServer.join(pid, playerb)
+
+    GamesServer.quit(pid, playera)
+    refute GamesServer.find_game(pid, playera)
+    refute GamesServer.find_game(pid, playerb)
+  end
+
+  test "update/2 broadcast quit game to subscribers" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+    {:ok, pid} = GamesServer.start_link(name: nil)
+
+    GamesServer.join(pid, playera)
+    GamesServer.join(pid, playerb)
+
+    game = GamesServer.find_game(pid, playera)
+
+    Phoenix.PubSub.subscribe(Connect4.PubSub, "game:#{game.id}")
+
+    GamesServer.quit(pid, playera)
+    assert_receive :game_quit
+  end
 end

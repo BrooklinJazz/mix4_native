@@ -96,4 +96,15 @@ defmodule Connect4.GamesTest do
     refute Games.waiting?(games, playera)
     refute Games.waiting?(games, playerb)
   end
+
+  test "quit/2" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+
+    games = Games.new()
+    {:enqueued, games} = Games.join(games, playera)
+    {:game_started, games} = Games.join(games, playera)
+
+    assert {:ok, games} = Games.quit(games, playera)
+  end
 end

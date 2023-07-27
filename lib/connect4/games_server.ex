@@ -28,6 +28,10 @@ defmodule Connect4.GamesServer do
     GenServer.call(pid, {:waiting, player})
   end
 
+  def quit(pid \\ __MODULE__, player) do
+    GenServer.call(pid, {:quit, player})
+  end
+
   def handle_call({:find_game, player}, _from, games) do
     {:reply, Games.find_game(games, player), games}
   end
@@ -58,6 +62,15 @@ defmodule Connect4.GamesServer do
 
   def handle_call({:waiting, player}, _from, games) do
     {:reply, Games.waiting?(games, player), games}
+  end
+
+  def handle_call({:quit, player}, _from, games) do
+    game = Games.find_game(games, player)
+    {:ok, games} = Games.quit(games, player)
+
+    Phoenix.PubSub.broadcast(Connect4.PubSub, "game:#{game.id}", :game_quit)
+
+    {:reply, :ok, games}
   end
 
   defp broadcast_new_game(new_game) do
