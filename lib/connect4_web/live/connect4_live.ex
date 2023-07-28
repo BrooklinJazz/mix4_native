@@ -102,6 +102,9 @@ defmodule Connect4Web.Connect4Live do
           <% end %>
         </HStack>
     <% end %>
+    <%= if @game do %>
+      <Button id="quit-game" phx-click="quit">Quit</Button>
+    <% end %>
     </Section>
     """
   end

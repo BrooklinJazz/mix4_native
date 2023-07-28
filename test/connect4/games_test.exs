@@ -106,5 +106,8 @@ defmodule Connect4.GamesTest do
     {:game_started, games} = Games.join(games, playera)
 
     assert {:ok, games} = Games.quit(games, playera)
+
+    assert Games.find_game(games, playera) == nil
+    assert Games.find_game(games, playerb) == nil
   end
 end
