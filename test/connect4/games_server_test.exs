@@ -169,6 +169,6 @@ defmodule Connect4.GamesServerTest do
     Phoenix.PubSub.subscribe(Connect4.PubSub, "game:#{game.id}")
 
     GamesServer.quit(pid, playera)
-    assert_receive :game_quit
+    assert_receive {:game_quit, ^playera}
   end
 end

@@ -90,7 +90,7 @@ defmodule Connect4.GamesServer do
     game = Games.find_game_by_player(games, player)
     {:ok, games} = Games.quit(games, player)
 
-    Phoenix.PubSub.broadcast(Connect4.PubSub, "game:#{game.id}", :game_quit)
+    Phoenix.PubSub.broadcast(Connect4.PubSub, "game:#{game.id}", {:game_quit, player})
 
     {:reply, :ok, games}
   end

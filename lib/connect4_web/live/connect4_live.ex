@@ -141,8 +141,14 @@ defmodule Connect4Web.Connect4Live do
     {:noreply, assign(socket, :game, game)}
   end
 
-  def handle_info(:game_quit, socket) do
-    {:noreply, socket |> assign(:game, nil) |> put_flash(:error, "Your opponent left the game.")}
+  def handle_info({:game_quit, player}, socket) do
+    socket = if(socket.assigns.current_player != player) do
+      put_flash(socket, :error, "Your opponent left the game.")
+    else
+      socket
+    end
+
+    {:noreply, socket |> assign(:game, nil)}
   end
 
   def handle_info(:tick, socket) do

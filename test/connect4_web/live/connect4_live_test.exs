@@ -250,6 +250,7 @@ defmodule Connect4Web.Connect4LiveTest do
       refute has_element?(view2, "#board")
 
       assert view2 |> render() =~ "Your opponent left the game."
+      refute view1 |> render() =~ "Your opponent left the game."
     end
 
     test "turn timer", %{
