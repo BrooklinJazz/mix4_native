@@ -248,6 +248,8 @@ defmodule Connect4Web.Connect4LiveTest do
       view1 |> element("#quit-game") |> render_click()
       refute has_element?(view1, "#board")
       refute has_element?(view2, "#board")
+
+      assert view2 |> render() =~ "Your opponent left the game."
     end
 
     test "turn timer", %{

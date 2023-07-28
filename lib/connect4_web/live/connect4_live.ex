@@ -142,7 +142,7 @@ defmodule Connect4Web.Connect4Live do
   end
 
   def handle_info(:game_quit, socket) do
-    {:noreply, assign(socket, :game, nil)}
+    {:noreply, socket |> assign(:game, nil) |> put_flash(:error, "Your opponent left the game.")}
   end
 
   def handle_info(:tick, socket) do
