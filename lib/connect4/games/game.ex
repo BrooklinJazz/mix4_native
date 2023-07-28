@@ -8,7 +8,8 @@ defmodule Connect4.Games.Game do
     player1: nil,
     player2: nil,
     board: Board.new(),
-    current_turn: nil
+    current_turn: nil,
+    turn_end_time: nil
   ]
 
   def new(playera, playerb) do
@@ -18,7 +19,8 @@ defmodule Connect4.Games.Game do
       id: Ecto.UUID.autogenerate(),
       player1: player1,
       player2: player2,
-      current_turn: player1
+      current_turn: player1,
+      turn_end_time: in_thirty_seconds()
     }
   end
 
@@ -36,7 +38,13 @@ defmodule Connect4.Games.Game do
           :yellow -> game.player2
         end
 
-      %__MODULE__{game | board: board, current_turn: next_player(game), winner: game_winner}
+      %__MODULE__{
+        game
+        | board: board,
+          current_turn: next_player(game),
+          winner: game_winner,
+          turn_end_time: in_thirty_seconds()
+      }
     else
       game
     end
@@ -58,9 +66,6 @@ defmodule Connect4.Games.Game do
     end
   end
 
-  def player1(%__MODULE__{} = game), do: game.player1
-  def player2(%__MODULE__{} = game), do: game.player2
-
   def opponent(%__MODULE__{player1: player1, player2: player2}, current_player) do
     case current_player do
       ^player1 -> player2
@@ -68,5 +73,22 @@ defmodule Connect4.Games.Game do
     end
   end
 
+  def player1(%__MODULE__{} = game), do: game.player1
+  def player2(%__MODULE__{} = game), do: game.player2
+  def turn_end_time(%__MODULE__{} = game), do: game.turn_end_time
+
+  def run_out_of_time(%__MODULE__{} = game, player) do
+    if game.current_turn == player do
+      %__MODULE__{
+        game
+        | current_turn: next_player(game),
+          turn_end_time: in_thirty_seconds()
+      }
+    else
+      game
+    end
+  end
+
   def winner(%__MODULE__{} = game), do: game.winner
+  defp in_thirty_seconds, do: DateTime.add(DateTime.utc_now(:second), 30, :second)
 end

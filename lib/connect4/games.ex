@@ -9,7 +9,11 @@ defmodule Connect4.Games do
     %__MODULE__{}
   end
 
-  def find_game(%__MODULE__{active_games: active_games}, %Player{} = player) do
+  def find_game_by_id(%__MODULE__{active_games: active_games}, game_id) do
+    Map.get(active_games, game_id)
+  end
+
+  def find_game_by_player(%__MODULE__{active_games: active_games}, %Player{} = player) do
     Enum.reduce_while(active_games, nil, fn {_, game}, acc ->
       if game.player1 == player || game.player2 == player do
         {:halt, game}
@@ -20,7 +24,7 @@ defmodule Connect4.Games do
   end
 
   def join(%__MODULE__{} = games, %Player{} = player) do
-    existing_game = find_game(games, player)
+    existing_game = find_game_by_player(games, player)
 
     cond do
       existing_game && Game.finished?(existing_game) ->
@@ -57,7 +61,7 @@ defmodule Connect4.Games do
   end
 
   def quit(%__MODULE__{} = games, %Player{} = player) do
-    game = find_game(games, player)
+    game = find_game_by_player(games, player)
 
     if game do
       games = %__MODULE__{games | active_games: Map.delete(games.active_games, game.id)}

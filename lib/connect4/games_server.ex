@@ -12,8 +12,8 @@ defmodule Connect4.GamesServer do
     {:ok, Games.new()}
   end
 
-  def find_game(pid \\ __MODULE__, player) do
-    GenServer.call(pid, {:find_game, player})
+  def find_game_by_player(pid \\ __MODULE__, player) do
+    GenServer.call(pid, {:find_game_by_player, player})
   end
 
   def join(pid \\ __MODULE__, player) do
@@ -24,6 +24,10 @@ defmodule Connect4.GamesServer do
     GenServer.call(pid, {:update, updated_game})
   end
 
+  def drop(pid \\ __MODULE__, game_id, player, column_index) do
+    GenServer.call(pid, {:drop, game_id, player, column_index})
+  end
+
   def waiting?(pid \\ __MODULE__, player) do
     GenServer.call(pid, {:waiting, player})
   end
@@ -32,8 +36,26 @@ defmodule Connect4.GamesServer do
     GenServer.call(pid, {:quit, player})
   end
 
-  def handle_call({:find_game, player}, _from, games) do
-    {:reply, Games.find_game(games, player), games}
+  def handle_call({:find_game_by_player, player}, _from, games) do
+    {:reply, Games.find_game_by_player(games, player), games}
+  end
+
+  def handle_call({:drop, game_id, player, column_index}, _from, games) do
+    game = Games.find_game_by_id(games, game_id)
+
+    if game do
+      updated_game = Game.drop(game, player, column_index)
+
+      Phoenix.PubSub.broadcast(
+        Connect4.PubSub,
+        "game:#{updated_game.id}",
+        {:game_updated, updated_game}
+      )
+
+      {:reply, :ok, Games.update(games, updated_game)}
+    else
+      {:reply, :error, games}
+    end
   end
 
   def handle_call({:join, player}, _from, games) do
@@ -45,7 +67,7 @@ defmodule Connect4.GamesServer do
         {:reply, :error, games}
 
       {:game_started, games} ->
-        broadcast_new_game(Games.find_game(games, player))
+        broadcast_new_game(Games.find_game_by_player(games, player))
         {:reply, :ok, games}
     end
   end
@@ -65,7 +87,7 @@ defmodule Connect4.GamesServer do
   end
 
   def handle_call({:quit, player}, _from, games) do
-    game = Games.find_game(games, player)
+    game = Games.find_game_by_player(games, player)
     {:ok, games} = Games.quit(games, player)
 
     Phoenix.PubSub.broadcast(Connect4.PubSub, "game:#{game.id}", :game_quit)
@@ -76,7 +98,17 @@ defmodule Connect4.GamesServer do
   defp broadcast_new_game(new_game) do
     player1 = Game.player1(new_game)
     player2 = Game.player2(new_game)
-    Phoenix.PubSub.broadcast(Connect4.PubSub, "player:#{player1.id}", {:game_started, new_game})
-    Phoenix.PubSub.broadcast(Connect4.PubSub, "player:#{player2.id}", {:game_started, new_game})
+
+    Phoenix.PubSub.broadcast(
+      Connect4.PubSub,
+      "player:#{player1.id}",
+      {:game_started, new_game}
+    )
+
+    Phoenix.PubSub.broadcast(
+      Connect4.PubSub,
+      "player:#{player2.id}",
+      {:game_started, new_game}
+    )
   end
 end

@@ -65,7 +65,7 @@ defmodule Connect4Web.Connect4LiveTest do
       viewa |> element("#play-online") |> render_click()
       viewb |> element("#play-online") |> render_click()
 
-      assert %Game{} = game = GamesServer.find_game(games_server, playera)
+      assert %Game{} = game = GamesServer.find_game_by_player(games_server, playera)
 
       {view1, view2} =
         case Game.player1(game) do
@@ -95,7 +95,7 @@ defmodule Connect4Web.Connect4LiveTest do
       viewa |> element("#play-online") |> render_click()
       viewb |> element("#play-online") |> render_click()
 
-      assert %Game{} = game = GamesServer.find_game(games_server, playera)
+      assert %Game{} = game = GamesServer.find_game_by_player(games_server, playera)
 
       {view1, view2} =
         case Game.player1(game) do
@@ -125,7 +125,7 @@ defmodule Connect4Web.Connect4LiveTest do
       viewa |> element("#play-online") |> render_click()
       viewb |> element("#play-online") |> render_click()
 
-      assert %Game{} = game = GamesServer.find_game(games_server, playera)
+      assert %Game{} = game = GamesServer.find_game_by_player(games_server, playera)
 
       {view1, view2} =
         case Game.player1(game) do
@@ -173,7 +173,7 @@ defmodule Connect4Web.Connect4LiveTest do
       viewa |> element("#play-online") |> render_click()
       viewb |> element("#play-online") |> render_click()
 
-      assert %Game{} = game = GamesServer.find_game(games_server, playera)
+      assert %Game{} = game = GamesServer.find_game_by_player(games_server, playera)
 
       {view1, view2} =
         case Game.player1(game) do
@@ -199,7 +199,7 @@ defmodule Connect4Web.Connect4LiveTest do
       viewa |> element("#play-online") |> render_click()
       viewb |> element("#play-online") |> render_click()
 
-      assert %Game{} = game = GamesServer.find_game(games_server, playera)
+      assert %Game{} = game = GamesServer.find_game_by_player(games_server, playera)
 
       {view1, view2} =
         case Game.player1(game) do
@@ -235,7 +235,7 @@ defmodule Connect4Web.Connect4LiveTest do
       viewa |> element("#play-online") |> render_click()
       viewb |> element("#play-online") |> render_click()
 
-      assert %Game{} = game = GamesServer.find_game(games_server, playera)
+      assert %Game{} = game = GamesServer.find_game_by_player(games_server, playera)
 
       {view1, view2} =
         case Game.player1(game) do
@@ -248,6 +248,79 @@ defmodule Connect4Web.Connect4LiveTest do
       view1 |> element("#quit-game") |> render_click()
       refute has_element?(view1, "#board")
       refute has_element?(view2, "#board")
+    end
+
+    test "turn timer", %{
+      conna: conna,
+      connb: connb,
+      playera: playera,
+      playerb: playerb,
+      games_server: games_server
+    } do
+      {:ok, viewa, _html} = live(conna, "/")
+      {:ok, viewb, _html} = live(connb, "/")
+
+      viewa |> element("#play-online") |> render_click()
+      viewb |> element("#play-online") |> render_click()
+
+      assert %Game{} = game = GamesServer.find_game_by_player(games_server, playera)
+
+      {view1, view2} =
+        case Game.player1(game) do
+          ^playera -> {viewa, viewb}
+          ^playerb -> {viewb, viewa}
+        end
+
+      assert view1 |> element("#turn-timer") |> render() =~ "30"
+      assert view2 |> element("#turn-timer") |> render() =~ "30"
+
+      # Wait for the turn timer to tick down
+      Process.sleep(1000)
+      assert view1 |> element("#turn-timer") |> render() =~ "29"
+      assert view2 |> element("#turn-timer") |> render() =~ "29"
+    end
+
+    test "turn timer runs out", %{
+      conna: conna,
+      connb: connb,
+      playera: playera,
+      playerb: playerb,
+      games_server: games_server
+    } do
+      {:ok, viewa, _html} = live(conna, "/")
+      {:ok, viewb, _html} = live(connb, "/")
+
+      viewa |> element("#play-online") |> render_click()
+      viewb |> element("#play-online") |> render_click()
+
+      assert %Game{} = game = GamesServer.find_game_by_player(games_server, playera)
+
+      {view1, view2} =
+        case Game.player1(game) do
+          ^playera -> {viewa, viewb}
+          ^playerb -> {viewb, viewa}
+        end
+
+      GamesServer.update(games_server, %Game{
+        game
+        | turn_end_time: DateTime.add(DateTime.utc_now(:second), -100, :second)
+      })
+
+      # trigger remaining_time to be recalculated
+      send(view1.pid, :tick)
+      send(view2.pid, :tick)
+
+      refute view1 |> element("#turn-timer") |> render() =~ "30"
+      refute view1 |> element("#turn-timer") |> render() =~ "-100"
+      refute view2 |> element("#turn-timer") |> render() =~ "30"
+      refute view2 |> element("#turn-timer") |> render() =~ "-100"
+
+      assert view1 |> element("#turn-timer") |> render() =~ "0"
+      assert view2 |> element("#turn-timer") |> render() =~ "0"
+
+      # swap turns automatically
+      assert has_element?(view1, "#opponents-turn")
+      assert has_element?(view2, "#your-turn")
     end
   end
 end

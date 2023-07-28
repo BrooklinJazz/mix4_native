@@ -9,13 +9,15 @@ defmodule Connect4Web.Connect4Live do
   def mount(_params, session, socket) do
     current_player = session["current_player"]
     games_server_pid = session["game_server_pid"] || GamesServer
-    game = GamesServer.find_game(games_server_pid, current_player)
+    game = GamesServer.find_game_by_player(games_server_pid, current_player)
 
     if game do
       Connect4Web.Endpoint.subscribe("game:#{game.id}")
     end
 
     Connect4Web.Endpoint.subscribe("player:#{current_player.id}")
+
+    Process.send_after(self(), :tick, 1000)
 
     socket =
       socket
@@ -25,6 +27,7 @@ defmodule Connect4Web.Connect4Live do
       |> assign(:platform_id, session["platform_id"] || socket.assigns.platform_id)
       |> assign(:games_server_pid, games_server_pid)
       |> assign(:waiting, GamesServer.waiting?(games_server_pid, current_player))
+      |> assign(:time_remaining, nil)
 
     {:ok, socket}
   end
@@ -63,9 +66,10 @@ defmodule Connect4Web.Connect4Live do
               <div class={"w-10 #{opponent_color(@game, @current_player)}  #{Game.current_turn(@game) == @current_player && "opacity-30"}"} />
             </article>
           </div>
-      <% end %>
-      <%= if @game do %>
-        <.button id="quit-game" phx-click="quit">Quit</.button>
+          <.button id="quit-game" phx-click="quit">Quit</.button>
+          <p id="turn-timer">
+            <%= @time_remaining %>
+          </p>
       <% end %>
     </section>
     """
@@ -101,10 +105,8 @@ defmodule Connect4Web.Connect4Live do
             </VStack>
           <% end %>
         </HStack>
-    <% end %>
-    <%= if @game do %>
-      <Button id="quit-game" phx-click="quit">Quit</Button>
-    <% end %>
+        <Button id="quit-game" phx-click="quit">Quit</Button>
+      <% end %>
     </Section>
     """
   end
@@ -131,7 +133,8 @@ defmodule Connect4Web.Connect4Live do
   def handle_info({:game_started, game}, socket) do
     Phoenix.PubSub.subscribe(Connect4.PubSub, "game:#{game.id}")
 
-    {:noreply, socket |> assign(:game, game) |> assign(:waiting, false)}
+    {:noreply,
+     socket |> assign(:game, game) |> assign(:waiting, false) |> assign_time_remaining()}
   end
 
   def handle_info({:game_updated, game}, socket) do
@@ -140,6 +143,38 @@ defmodule Connect4Web.Connect4Live do
 
   def handle_info(:game_quit, socket) do
     {:noreply, assign(socket, :game, nil)}
+  end
+
+  def handle_info(:tick, socket) do
+    Process.send_after(self(), :tick, 1000)
+
+    if socket.assigns.game do
+      {:noreply, assign_time_remaining(socket)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp assign_time_remaining(socket) do
+    game = socket.assigns.game
+
+    time_remaining =
+      Game.turn_end_time(game)
+      |> DateTime.diff(DateTime.utc_now(:second))
+      |> max(0)
+
+    current_player_ran_out_of_time =
+      time_remaining == 0 and socket.assigns.current_player == Game.current_turn(game)
+
+    if current_player_ran_out_of_time do
+      # it's a bit hacky to handle running out of time in the LiveView, but it's an easy implementation for now.
+      GamesServer.update(
+        socket.assigns.games_server_pid,
+        Game.run_out_of_time(game, socket.assigns.current_player)
+      )
+    end
+
+    assign(socket, :time_remaining, time_remaining)
   end
 
   defp board(assigns) do
