@@ -145,5 +145,4 @@ defmodule Connect4.GamesServerTest do
     GamesServer.quit(pid, playera)
     assert_receive :game_quit
   end
-
 end
