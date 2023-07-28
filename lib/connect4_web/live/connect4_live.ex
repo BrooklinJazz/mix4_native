@@ -4,6 +4,7 @@ defmodule Connect4Web.Connect4Live do
   alias Connect4.GamesServer
   alias Connect4.Games.Game
   alias Connect4.Games.Board
+  alias Connect4Web.Presence
 
   @impl true
   def mount(_params, session, socket) do
@@ -16,6 +17,9 @@ defmodule Connect4Web.Connect4Live do
     end
 
     Connect4Web.Endpoint.subscribe("player:#{current_player.id}")
+    Connect4Web.Endpoint.subscribe(Presence.players_topic())
+
+    Presence.track(self(), Presence.players_topic(), current_player.id, current_player)
 
     Process.send_after(self(), :tick, 1000)
 
@@ -23,11 +27,12 @@ defmodule Connect4Web.Connect4Live do
       socket
       |> assign(:game, game)
       |> assign(:current_player, current_player)
+      |> assign(:waiting, GamesServer.waiting?(games_server_pid, current_player))
+      |> assign(:time_remaining, nil)
+      |> assign_players()
       # platform_id and games_server_pid set for testing purposes
       |> assign(:platform_id, session["platform_id"] || socket.assigns.platform_id)
       |> assign(:games_server_pid, games_server_pid)
-      |> assign(:waiting, GamesServer.waiting?(games_server_pid, current_player))
-      |> assign(:time_remaining, nil)
 
     {:ok, socket}
   end
@@ -36,42 +41,56 @@ defmodule Connect4Web.Connect4Live do
   def render(%{platform_id: :web} = assigns) do
     ~H"""
     Your name is: <%= @current_player.name %>
-    <section class="flex flex-col h-screen w-full items-center justify-center">
-      <%= cond do %>
-        <% @waiting -> %>
-          <p>Waiting for opponent</p>
-        <% @game == nil -> %>
-          <p><%= @current_player.name %></p>
-          <.button id="play-online" phx-click="play-online">Play Online</.button>
-        <% Game.winner(@game) == @current_player -> %>
-          <p>You win!</p>
-          <.button id="play-online" phx-click="play-online">Play Again</.button>
-        <% Game.winner(@game) && Game.winner(@game)  != @current_player -> %>
-          <p>You lose...</p>
-          <.button id="play-online" phx-click="play-online">Play Again</.button>
-        <% @game -> %>
-          <div>
-            <article class="flex justify-between w-full">
-              <p><%= @current_player.name %></p>
-              <%= if @current_player == Game.current_turn(@game) do %>
-                <p id="your-turn">Your turn</p>
-              <% else %>
-                <p id="opponents-turn">Waiting for opponent</p>
-              <% end %>
-              <p><%= Game.opponent(@game, @current_player).name %></p>
-            </article>
-            <article class="flex">
-              <div class={"w-10 #{player_color(@game, @current_player)} #{Game.current_turn(@game) == Game.opponent(@game, @current_player) && "opacity-30"}"} />
-              <.board game={@game} current_player={@current_player} />
-              <div class={"w-10 #{opponent_color(@game, @current_player)}  #{Game.current_turn(@game) == @current_player && "opacity-30"}"} />
-            </article>
-          </div>
-          <.button id="quit-game" phx-click="quit">Quit</.button>
-          <p id="turn-timer">
-            <%= @time_remaining %>
-          </p>
-      <% end %>
-    </section>
+    <main class="flex h-screen gap-x-4 w-[80%] items-center justify-center m-auto">
+      <section id="players-list" class="flex flex-col h-full w-1/3 max-h-[32rem] max-w-80">
+        <h2>Players Online: <%= Enum.count(@players) %></h2>
+        <.table id="players" rows={@players}>
+          <:col :let={player} label="username"><%= player.name %></:col>
+          <:col :let={player} label="status">online</:col>
+          <:col :let={player}>
+            <.button>Request</.button>
+          </:col>
+        </.table>
+      </section>
+      <article
+        id="game"
+        class="w-2/3 h-[32rem] flex items-center justify-center border-2 border-black"
+      >
+        <%= cond do %>
+          <% @waiting -> %>
+            <p>Waiting for opponent</p>
+          <% @game == nil -> %>
+            <.button id="play-online" phx-click="play-online">Play Online</.button>
+          <% Game.winner(@game) == @current_player -> %>
+            <p>You win!</p>
+            <.button id="play-online" phx-click="play-online">Play Again</.button>
+          <% Game.winner(@game) && Game.winner(@game)  != @current_player -> %>
+            <p>You lose...</p>
+            <.button id="play-online" phx-click="play-online">Play Again</.button>
+          <% @game -> %>
+            <div>
+              <article class="flex justify-between w-full">
+                <p><%= @current_player.name %></p>
+                <%= if @current_player == Game.current_turn(@game) do %>
+                  <p id="your-turn">Your turn</p>
+                <% else %>
+                  <p id="opponents-turn">Waiting for opponent</p>
+                <% end %>
+                <p><%= Game.opponent(@game, @current_player).name %></p>
+              </article>
+              <article class="flex">
+                <div class={"w-10 #{player_color(@game, @current_player)} #{Game.current_turn(@game) == Game.opponent(@game, @current_player) && "opacity-30"}"} />
+                <.board game={@game} current_player={@current_player} />
+                <div class={"w-10 #{opponent_color(@game, @current_player)}  #{Game.current_turn(@game) == @current_player && "opacity-30"}"} />
+              </article>
+            </div>
+            <.button id="quit-game" phx-click="quit">Quit</.button>
+            <p id="turn-timer">
+              <%= @time_remaining %>
+            </p>
+        <% end %>
+      </article>
+    </main>
     """
   end
 
@@ -142,13 +161,18 @@ defmodule Connect4Web.Connect4Live do
   end
 
   def handle_info({:game_quit, player}, socket) do
-    socket = if(socket.assigns.current_player != player) do
-      put_flash(socket, :error, "Your opponent left the game.")
-    else
-      socket
-    end
+    socket =
+      if(socket.assigns.current_player != player) do
+        put_flash(socket, :error, "Your opponent left the game.")
+      else
+        socket
+      end
 
     {:noreply, socket |> assign(:game, nil)}
+  end
+
+  def handle_info(%{event: "presence_diff", payload: _payload}, socket) do
+    {:noreply, assign_players(socket)}
   end
 
   def handle_info(:tick, socket) do
@@ -181,6 +205,20 @@ defmodule Connect4Web.Connect4Live do
     end
 
     assign(socket, :time_remaining, time_remaining)
+  end
+
+  defp assign_players(socket) do
+    # this is an expensive operation, but it's fine for now.
+    # ideally we'll handle joins and leaves separately.
+    players =
+      Presence.list(Presence.players_topic())
+      |> Enum.map(fn {_user_id, data} ->
+        data[:metas]
+        |> List.first()
+      end)
+      |> Enum.reject(fn each -> each.id == socket.assigns.current_player.id end)
+
+    assign(socket, players: players)
   end
 
   defp board(assigns) do

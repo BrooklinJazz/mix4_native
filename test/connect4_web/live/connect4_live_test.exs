@@ -13,31 +13,13 @@ defmodule Connect4Web.Connect4LiveTest do
     assert html =~ "Connect4"
   end
 
-  describe "web _ two player online game" do
-    setup %{conn: conn} do
-      playera = Player.new(id: "a", name: "namea")
-      playerb = Player.new(id: "b", name: "nameb")
-      # sets up unique GamesServer per test
-      {:ok, pid} = GamesServer.start_link(name: nil)
-
-      conna =
-        Plug.Test.init_test_session(conn,
-          current_player: playera,
-          platform_id: @platform_id,
-          game_server_pid: pid
-        )
-
-      connb =
-        Plug.Test.init_test_session(conn,
-          current_player: playerb,
-          platform_id: @platform_id,
-          game_server_pid: pid
-        )
-
-      [playera: playera, playerb: playerb, conna: conna, connb: connb, games_server: pid]
-    end
-
-    test "both players can start game", %{conna: conna, connb: connb} do
+  describe "two player online game" do
+    test "both players can start game", %{conn: conn} do
+      playera = Player.new()
+      playerb = Player.new()
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      conna = player_conn(conn, playera, games_server)
+      connb = player_conn(conn, playerb, games_server)
       {:ok, view1, _html} = live(conna, "/")
       {:ok, view2, _html} = live(connb, "/")
 
@@ -52,13 +34,12 @@ defmodule Connect4Web.Connect4LiveTest do
       assert has_element?(view2, "#board")
     end
 
-    test "both players can drop discs", %{
-      conna: conna,
-      connb: connb,
-      playera: playera,
-      playerb: playerb,
-      games_server: games_server
-    } do
+    test "both players can drop discs", %{conn: conn} do
+      playera = Player.new()
+      playerb = Player.new()
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      conna = player_conn(conn, playera, games_server)
+      connb = player_conn(conn, playerb, games_server)
       {:ok, viewa, _html} = live(conna, "/")
       {:ok, viewb, _html} = live(connb, "/")
 
@@ -82,13 +63,12 @@ defmodule Connect4Web.Connect4LiveTest do
       assert view2 |> element("#cell-1-5") |> render() =~ "yellow"
     end
 
-    test "display players turn", %{
-      conna: conna,
-      connb: connb,
-      playera: playera,
-      playerb: playerb,
-      games_server: games_server
-    } do
+    test "display players turn", %{conn: conn} do
+      playera = Player.new()
+      playerb = Player.new()
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      conna = player_conn(conn, playera, games_server)
+      connb = player_conn(conn, playerb, games_server)
       {:ok, viewa, _html} = live(conna, "/")
       {:ok, viewb, _html} = live(connb, "/")
 
@@ -112,13 +92,12 @@ defmodule Connect4Web.Connect4LiveTest do
       assert has_element?(view2, "#your-turn")
     end
 
-    test "player wins", %{
-      conna: conna,
-      connb: connb,
-      playera: playera,
-      playerb: playerb,
-      games_server: games_server
-    } do
+    test "player wins", %{conn: conn} do
+      playera = Player.new()
+      playerb = Player.new()
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      conna = player_conn(conn, playera, games_server)
+      connb = player_conn(conn, playerb, games_server)
       {:ok, viewa, _html} = live(conna, "/")
       {:ok, viewb, _html} = live(connb, "/")
 
@@ -145,7 +124,12 @@ defmodule Connect4Web.Connect4LiveTest do
       assert view2 |> render() =~ "You lose"
     end
 
-    test "player leaves and rejoins", %{conna: conna, connb: connb} do
+    test "player leaves and rejoins", %{conn: conn} do
+      playera = Player.new()
+      playerb = Player.new()
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      conna = player_conn(conn, playera, games_server)
+      connb = player_conn(conn, playerb, games_server)
       {:ok, view1, _html} = live(conna, "/")
       {:ok, view2, _html} = live(connb, "/")
 
@@ -160,13 +144,12 @@ defmodule Connect4Web.Connect4LiveTest do
     end
 
     @tag :web
-    test "hover styles", %{
-      conna: conna,
-      connb: connb,
-      playera: playera,
-      playerb: playerb,
-      games_server: games_server
-    } do
+    test "hover styles", %{conn: conn} do
+      playera = Player.new()
+      playerb = Player.new()
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      conna = player_conn(conn, playera, games_server)
+      connb = player_conn(conn, playerb, games_server)
       {:ok, viewa, _html} = live(conna, "/")
       {:ok, viewb, _html} = live(connb, "/")
 
@@ -186,13 +169,12 @@ defmodule Connect4Web.Connect4LiveTest do
       assert view2 |> element("#cell-1-5") |> render() =~ "group-hover:bg-yellow-500"
     end
 
-    test "play again", %{
-      conna: conna,
-      connb: connb,
-      playera: playera,
-      playerb: playerb,
-      games_server: games_server
-    } do
+    test "play again", %{conn: conn} do
+      playera = Player.new()
+      playerb = Player.new()
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      conna = player_conn(conn, playera, games_server)
+      connb = player_conn(conn, playerb, games_server)
       {:ok, viewa, _html} = live(conna, "/")
       {:ok, viewb, _html} = live(connb, "/")
 
@@ -222,13 +204,12 @@ defmodule Connect4Web.Connect4LiveTest do
       assert has_element?(view2, "#board")
     end
 
-    test "quit", %{
-      conna: conna,
-      connb: connb,
-      playera: playera,
-      playerb: playerb,
-      games_server: games_server
-    } do
+    test "quit", %{conn: conn} do
+      playera = Player.new()
+      playerb = Player.new()
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      conna = player_conn(conn, playera, games_server)
+      connb = player_conn(conn, playerb, games_server)
       {:ok, viewa, _html} = live(conna, "/")
       {:ok, viewb, _html} = live(connb, "/")
 
@@ -253,13 +234,12 @@ defmodule Connect4Web.Connect4LiveTest do
       refute view1 |> render() =~ "Your opponent left the game."
     end
 
-    test "turn timer", %{
-      conna: conna,
-      connb: connb,
-      playera: playera,
-      playerb: playerb,
-      games_server: games_server
-    } do
+    test "turn timer", %{conn: conn} do
+      playera = Player.new()
+      playerb = Player.new()
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      conna = player_conn(conn, playera, games_server)
+      connb = player_conn(conn, playerb, games_server)
       {:ok, viewa, _html} = live(conna, "/")
       {:ok, viewb, _html} = live(connb, "/")
 
@@ -283,13 +263,12 @@ defmodule Connect4Web.Connect4LiveTest do
       assert view2 |> element("#turn-timer") |> render() =~ "29"
     end
 
-    test "turn timer runs out", %{
-      conna: conna,
-      connb: connb,
-      playera: playera,
-      playerb: playerb,
-      games_server: games_server
-    } do
+    test "turn timer runs out", %{conn: conn} do
+      playera = Player.new()
+      playerb = Player.new()
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      conna = player_conn(conn, playera, games_server)
+      connb = player_conn(conn, playerb, games_server)
       {:ok, viewa, _html} = live(conna, "/")
       {:ok, viewb, _html} = live(connb, "/")
 
@@ -325,5 +304,40 @@ defmodule Connect4Web.Connect4LiveTest do
       assert has_element?(view1, "#opponents-turn")
       assert has_element?(view2, "#your-turn")
     end
+  end
+
+  describe "user presence" do
+    test "display player list", %{conn: conn} do
+      playera = Player.new(name: "playera")
+      playerb = Player.new(name: "playerb")
+      playerc = Player.new(name: "playerc")
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      conna = player_conn(conn, playera, games_server)
+      connb = player_conn(conn, playerb, games_server)
+      connc = player_conn(conn, playerc, games_server)
+      {:ok, viewa, _html} = live(conna, "/")
+      {:ok, viewb, _html} = live(connb, "/")
+      {:ok, viewc, _html} = live(connc, "/")
+
+      refute viewa |> element("#players-list") |> render() =~ playera.name
+      assert viewa |> element("#players-list") |> render() =~ playerb.name
+      assert viewa |> element("#players-list") |> render() =~ playerc.name
+
+      refute viewb |> element("#players-list") |> render() =~ playerb.name
+      assert viewb |> element("#players-list") |> render() =~ playera.name
+      assert viewb |> element("#players-list") |> render() =~ playerc.name
+
+      refute viewc |> element("#players-list") |> render() =~ playerc.name
+      assert viewc |> element("#players-list") |> render() =~ playera.name
+      assert viewc |> element("#players-list") |> render() =~ playerb.name
+    end
+  end
+
+  defp player_conn(conn, player, game_server) do
+    Plug.Test.init_test_session(conn,
+      current_player: player,
+      platform_id: @platform_id,
+      game_server_pid: game_server
+    )
   end
 end

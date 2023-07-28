@@ -46,7 +46,8 @@ defmodule Connect4.MixProject do
       {:plug_cowboy, "~> 2.5"},
       {:live_view_native, "~> 0.0.9-rc.0"},
       {:live_view_native_swift_ui,
-       git: "https://github.com/liveview-native/liveview-client-swiftui", branch: "main"}
+       git: "https://github.com/liveview-native/liveview-client-swiftui", branch: "main"},
+       {:faker, "~> 0.17.0"}
     ]
   end
 
