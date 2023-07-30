@@ -12,16 +12,16 @@ defmodule Connect4Web.Connect4Live do
     games_server_pid = session["game_server_pid"] || GamesServer
     game = GamesServer.find_game_by_player(games_server_pid, current_player)
 
-    if game do
+    if game && connected?(socket) do
       Connect4Web.Endpoint.subscribe("game:#{game.id}")
     end
 
-    Connect4Web.Endpoint.subscribe("player:#{current_player.id}")
-    Connect4Web.Endpoint.subscribe(Presence.players_topic())
-
-    Presence.track_player(self(), current_player, (game && game.id) || nil)
-
-    Process.send_after(self(), :tick, 1000)
+    if connected?(socket) do
+      Connect4Web.Endpoint.subscribe("player:#{current_player.id}")
+      Connect4Web.Endpoint.subscribe(Presence.players_topic())
+      Presence.track_player(self(), current_player, (game && game.id) || nil)
+      Process.send_after(self(), :tick, 1000)
+    end
 
     socket =
       socket
@@ -29,18 +29,12 @@ defmodule Connect4Web.Connect4Live do
       |> assign(:current_player, current_player)
       |> assign(:waiting, GamesServer.waiting?(games_server_pid, current_player))
       |> assign(:time_remaining, nil)
-      |> assign(
-        :outgoing_requests,
-        GamesServer.outgoing_requests(games_server_pid, current_player)
-      )
-      |> assign(
-        :incoming_requests,
-        GamesServer.incoming_requests(games_server_pid, current_player)
-      )
-      |> assign_players()
       # platform_id and games_server_pid set for testing purposes
       |> assign(:platform_id, session["platform_id"] || socket.assigns.platform_id)
       |> assign(:games_server_pid, games_server_pid)
+      |> assign_incoming_requests()
+      |> assign_outgoing_requests()
+      |> assign_players()
 
     {:ok, socket}
   end
@@ -48,80 +42,90 @@ defmodule Connect4Web.Connect4Live do
   @impl true
   def render(%{platform_id: :web} = assigns) do
     ~H"""
-    Your name is: <%= @current_player.name %>
-    <main class="flex h-screen gap-x-4 w-[80%] items-center justify-center m-auto">
-      <section id="players-list" class="flex flex-col h-full w-1/3 max-h-[32rem] max-w-80">
-        <h2>Players Online: <%= Enum.count(@players) %></h2>
-        <.table id="players" rows={@players}>
-          <:col :let={player} label="username"><%= player.struct.name %></:col>
-          <:col :let={player}>
-            <%= cond do %>
-              <% player.game_id -> %>
-                <.button id={"currently-playing-#{player.struct.id}"} disabled>
-                  Already In Game
-                </.button>
-              <% player.struct in @outgoing_requests -> %>
-                <.button id={"request-player-#{player.struct.id}"} disabled>
-                  Requested
-                </.button>
-              <% player.struct in @incoming_requests -> %>
-                <.button
-                  id={"request-player-#{player.struct.id}"}
-                  phx-click="request"
-                  phx-value-player_id={player.struct.id}
-                >
-                  Accept Request
-                </.button>
-              <% true -> %>
-                <.button
-                  id={"request-player-#{player.struct.id}"}
-                  phx-click="request"
-                  phx-value-player_id={player.struct.id}
-                >
-                  Request
-                </.button>
-            <% end %>
-          </:col>
-        </.table>
-      </section>
-      <article
-        id="game"
-        class="w-2/3 h-[32rem] flex items-center justify-center border-2 border-black"
-      >
-        <%= cond do %>
-          <% @waiting -> %>
-            <p>Waiting for opponent</p>
-          <% @game == nil -> %>
-            <.button id="play-online" phx-click="play-online">Play Online</.button>
-          <% Game.winner(@game) == @current_player -> %>
-            <p>You win!</p>
-            <.button id="play-online" phx-click="play-online">Play Again</.button>
-          <% Game.winner(@game) && Game.winner(@game)  != @current_player -> %>
-            <p>You lose...</p>
-            <.button id="play-online" phx-click="play-online">Play Again</.button>
-          <% @game -> %>
-            <div>
+    <main class="flex w-[80%] flex-col m-auto h-screen justify-center items-center">
+      <p class="mb-4">Welcome <%= @current_player.name %></p>
+      <section class="gap-x-8 w-full flex flex-col-reverse sm:flex-row">
+        <section id="players-list" class="flex flex-col flex-grow min-w-max sm:w-2/5">
+          <h2>Players Online: <%= Enum.count(@players) %></h2>
+          <ul>
+            <li
+              :for={player <- @players}
+              class="flex justify-between items-center p-2 border-t-2 border-gray-300"
+            >
+              <h2><%= player.struct.name %></h2>
+              <%= cond do %>
+                <% player.game_id -> %>
+                  <.button class="w-1/2" id={"currently-playing-#{player.struct.id}"} disabled>
+                    Already In Game
+                  </.button>
+                <% player.struct in @outgoing_requests -> %>
+                  <.button class="w-1/2" id={"request-player-#{player.struct.id}"} disabled>
+                    Requested
+                  </.button>
+                <% player.struct in @incoming_requests -> %>
+                  <.button
+                    id={"request-player-#{player.struct.id}"}
+                    class="w-1/2"
+                    phx-click="request"
+                    phx-value-player_id={player.struct.id}
+                  >
+                    Accept Request
+                  </.button>
+                <% true -> %>
+                  <.button
+                    id={"request-player-#{player.struct.id}"}
+                    class="w-1/2"
+                    phx-click="request"
+                    phx-value-player_id={player.struct.id}
+                  >
+                    Request
+                  </.button>
+              <% end %>
+            </li>
+          </ul>
+        </section>
+        <section id="game" class="flex flex-col sm:w-2/5 h-96 justify-center">
+          <%= cond do %>
+            <% @waiting -> %>
+              <.empty_board />
+              <div class="flex justify-center items-center gap-x-2 bg-zinc-900 p-2 text-white">
+                <p>Waiting for opponent...</p>
+                <.icon name="hero-arrow-path" class="ml-1 w-3 h-3 animate-spin" />
+              </div>
+            <% @game == nil -> %>
+              <.empty_board />
+              <.button id="play-online" phx-click="play-online">Play Online</.button>
+            <% Game.winner(@game) == @current_player -> %>
+              <p>You win!</p>
+              <.empty_board />
+              <.button id="play-online" phx-click="play-online">Play Again</.button>
+            <% Game.winner(@game) && Game.winner(@game)  != @current_player -> %>
+              <p>You lose...</p>
+              <.button id="play-online" phx-click="play-online">Play Again</.button>
+            <% @game -> %>
+              <.board game={@game} current_player={@current_player} />
               <article class="flex justify-between w-full">
-                <p><%= @current_player.name %></p>
+                <p class={"py-2 flex flex-1 justify-center #{player_color(@game, @current_player)}"}>
+                  <%= @current_player.name %>
+                </p>
+                <p class={"py-2 flex flex-1 justify-center #{player_color(@game, Game.opponent(@game, @current_player))}"}>
+                  <%= Game.opponent(@game, @current_player).name %>
+                </p>
+              </article>
+              <article class="w-full bg-gray-100 p-2 flex justify-center gap-x-4">
                 <%= if @current_player == Game.current_turn(@game) do %>
                   <p id="your-turn">Your turn</p>
                 <% else %>
                   <p id="opponents-turn">Waiting for opponent</p>
                 <% end %>
-                <p><%= Game.opponent(@game, @current_player).name %></p>
+                <p id="turn-timer" class="w-8">
+                  <%= @time_remaining %>
+                </p>
               </article>
-              <article class="flex">
-                <div class={"w-10 #{player_color(@game, @current_player)} #{Game.current_turn(@game) == Game.opponent(@game, @current_player) && "opacity-30"}"} />
-                <.board game={@game} current_player={@current_player} />
-                <div class={"w-10 #{opponent_color(@game, @current_player)}  #{Game.current_turn(@game) == @current_player && "opacity-30"}"} />
-              </article>
-            </div>
-            <.button id="quit-game" phx-click="quit">Quit</.button>
-            <p id="turn-timer">
-              <%= @time_remaining %>
-            </p>
-        <% end %>
-      </article>
+              <.button class="ml-auto w-1/3" id="quit-game" phx-click="quit">Quit</.button>
+          <% end %>
+        </section>
+      </section>
     </main>
     """
   end
@@ -319,22 +323,52 @@ defmodule Connect4Web.Connect4Live do
     )
   end
 
+  defp empty_board(assigns) do
+    ~H"""
+    <section class="flex gap-x-2 bg-blue-500 p-2">
+      <%= for column <- Board.new() |> Board.transpose() do %>
+        <article class="flex flex-col flex-1 gap-y-2 h-full">
+          <%= for _cell <- Enum.with_index(column) do %>
+            <button class="cursor-auto">
+              <svg
+                class="fill-black"
+                style="width: 100%; height: 100%;vertical-align: middle;overflow: hidden;"
+                viewBox="0 0 1024 1024"
+                version="1.1"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M507.768595 892.826446a313.123967 313.123967 0 0 1-223.418182-96.476033 327.087603 327.087603 0 0 1 4.231405-455.722314l196.33719-196.76033a39.775207 39.775207 0 0 1 30.042975-12.694215 42.31405 42.31405 0 0 1 30.042976 13.117355l192.952066 199.722314a327.087603 327.087603 0 0 1-3.808265 455.722314A310.161983 310.161983 0 0 1 507.768595 892.826446z" />
+              </svg>
+            </button>
+          <% end %>
+        </article>
+      <% end %>
+    </section>
+    """
+  end
+
   defp board(assigns) do
     ~H"""
-    <section id="board" class="flex gap-x-2 items-center justify-center bg-blue-400 p-3">
+    <section id="board" class="flex gap-x-2 bg-blue-500 p-2">
       <%= for {column, x} <- Enum.with_index(Board.transpose(Game.board(@game))) do %>
         <article
           id={"column-#{x}"}
           phx-click="drop"
           phx-value-column={x}
-          class="flex flex-col gap-y-2 group cursor-pointer"
+          class="flex flex-col flex-1 gap-y-2 group cursor-pointer h-full"
         >
           <%= for {cell, y} <- Enum.with_index(column) do %>
-            <button
-              id={"cell-#{x}-#{y}"}
-              data-color={cell}
-              class={"h-12 w-12 rounded-full #{platform_color(:web, cell)} #{hover_styles(@game, @current_player, x, y)}"}
-            />
+            <button id={"cell-#{x}-#{y}"} data-color={cell}>
+              <svg
+                class={"#{cell_fill_styles(@game, @current_player, {x, y}, cell)} "}
+                style="width: 100%; height: 100%;vertical-align: middle;overflow: hidden;"
+                viewBox="0 0 1024 1024"
+                version="1.1"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M507.768595 892.826446a313.123967 313.123967 0 0 1-223.418182-96.476033 327.087603 327.087603 0 0 1 4.231405-455.722314l196.33719-196.76033a39.775207 39.775207 0 0 1 30.042975-12.694215 42.31405 42.31405 0 0 1 30.042976 13.117355l192.952066 199.722314a327.087603 327.087603 0 0 1-3.808265 455.722314A310.161983 310.161983 0 0 1 507.768595 892.826446z" />
+              </svg>
+            </button>
           <% end %>
         </article>
       <% end %>
@@ -358,44 +392,31 @@ defmodule Connect4Web.Connect4Live do
     end
   end
 
-  defp hover_styles(game, current_player, x, y) do
+  defp cell_fill_styles(game, player, {x, y}, cell) do
     should_display_hover_styles =
-      Board.drop_index(game.board, x) == y && Game.current_turn(game) == current_player
+      Board.drop_index(game.board, x) == y && Game.current_turn(game) == player
 
-    if should_display_hover_styles do
-      "#{hover_color(game, current_player)} group-hover:opacity-50"
-    else
-      ""
-    end
-  end
-
-  defp player_color(%Game{} = game, current_player) do
     player1 = Game.player1(game)
     player2 = Game.player2(game)
 
-    case current_player do
-      ^player1 -> "bg-red-500"
-      ^player2 -> "bg-yellow-500"
+    case {player, should_display_hover_styles, cell} do
+      {_, _, :red} -> "fill-purple-400"
+      {_, _, :yellow} -> "fill-orange-400"
+      {^player1, true, _} -> "group-hover:fill-purple-400 fill-black"
+      {^player2, true, _} -> "group-hover:fill-orange-400 fill-black"
+      _ -> "fill-black"
     end
   end
 
-  defp opponent_color(%Game{} = game, current_player) do
+  defp player_color(%Game{} = game, player) do
     player1 = Game.player1(game)
     player2 = Game.player2(game)
 
-    case current_player do
-      ^player1 -> "bg-yellow-500"
-      ^player2 -> "bg-red-500"
-    end
-  end
-
-  defp hover_color(%Game{} = game, current_player) do
-    player1 = Game.player1(game)
-    player2 = Game.player2(game)
-
-    case current_player do
-      ^player1 -> "group-hover:bg-red-500"
-      ^player2 -> "group-hover:bg-yellow-500"
+    case {player, Game.current_turn(game) == player} do
+      {^player1, true} -> "bg-purple-400"
+      {^player1, false} -> "bg-purple-400 opacity-40"
+      {^player2, true} -> "bg-orange-400"
+      {^player2, false} -> "bg-orange-400 opacity-40"
     end
   end
 end

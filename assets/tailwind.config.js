@@ -17,7 +17,8 @@ module.exports = {
         'spin-slow': 'spin 2s linear infinite',
       },
       colors: {
-        brand: "#FD4F00",
+        "phx-brand": "#FD4F00",
+        "mix-brand": "#580A70",
       }
     },
   },

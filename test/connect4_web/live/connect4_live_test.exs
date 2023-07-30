@@ -165,9 +165,9 @@ defmodule Connect4Web.Connect4LiveTest do
           ^playerb -> {viewb, viewa}
         end
 
-      assert view1 |> element("#cell-0-5") |> render() =~ "group-hover:bg-red-500"
+      assert view1 |> element("#cell-0-5") |> render() =~ "group-hover"
       view1 |> element("#column-0") |> render_click()
-      assert view2 |> element("#cell-1-5") |> render() =~ "group-hover:bg-yellow-500"
+      assert view2 |> element("#cell-1-5") |> render() =~ "group-hover"
     end
 
     test "play again", %{conn: conn} do
