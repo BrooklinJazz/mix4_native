@@ -24,8 +24,8 @@ defmodule Connect4.GamesServer do
     GenServer.call(pid, {:incoming_requests, player})
   end
 
-  def join(pid \\ __MODULE__, player) do
-    GenServer.call(pid, {:join, player})
+  def join_queue(pid \\ __MODULE__, player) do
+    GenServer.call(pid, {:join_queue, player})
   end
 
   def leave_queue(pid \\ __MODULE__, player) do
@@ -78,8 +78,8 @@ defmodule Connect4.GamesServer do
     {:reply, Games.incoming_requests(games, player), games}
   end
 
-  def handle_call({:join, player}, _from, games) do
-    case Games.join(games, player) do
+  def handle_call({:join_queue, player}, _from, games) do
+    case Games.join_queue(games, player) do
       {:enqueued, games} ->
         {:reply, :ok, games}
 

@@ -33,13 +33,13 @@ defmodule Connect4.Games do
     end)
   end
 
-  def join(%__MODULE__{} = games, %Player{} = player) do
+  def join_queue(%__MODULE__{} = games, %Player{} = player) do
     existing_game = find_game_by_player(games, player)
 
     cond do
       existing_game && Game.finished?(existing_game) ->
         active_games = Map.delete(games.active_games, existing_game.id)
-        join(%__MODULE__{games | active_games: active_games}, player)
+        join_queue(%__MODULE__{games | active_games: active_games}, player)
 
       # ignore if player is already in a game
       existing_game ->
@@ -64,11 +64,7 @@ defmodule Connect4.Games do
 
   def outgoing_requests(%__MODULE__{} = games, %Player{} = player) do
     Enum.reduce(games.requests, [], fn {requester, requested}, acc ->
-      if requester == player do
-        [requested | acc]
-      else
-        acc
-      end
+      if requester == player, do: [requested | acc], else: acc
     end)
   end
 

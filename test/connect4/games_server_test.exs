@@ -15,8 +15,8 @@ defmodule Connect4.GamesServerTest do
     playerb = Player.new(id: "b", name: "playerb")
     {:ok, pid} = GamesServer.start_link(name: nil)
 
-    GamesServer.join(pid, playera)
-    GamesServer.join(pid, playerb)
+    GamesServer.join_queue(pid, playera)
+    GamesServer.join_queue(pid, playerb)
 
     game = GamesServer.find_game_by_player(pid, playera)
 
@@ -51,51 +51,51 @@ defmodule Connect4.GamesServerTest do
     assert Enum.sort(actual) == Enum.sort(expected)
   end
 
-  test "join/2 adds two players to game" do
+  test "join_queue/2 adds two players to game" do
     playera = Player.new(id: "a", name: "playera")
     playerb = Player.new(id: "b", name: "playerb")
     {:ok, pid} = GamesServer.start_link(name: nil)
 
-    assert GamesServer.join(pid, playera) == :ok
-    assert GamesServer.join(pid, playerb) == :ok
+    assert GamesServer.join_queue(pid, playera) == :ok
+    assert GamesServer.join_queue(pid, playerb) == :ok
 
     assert %Game{} = GamesServer.find_game_by_player(pid, playera)
     assert %Game{} = GamesServer.find_game_by_player(pid, playerb)
   end
 
-  test "join/2 refuse players in existing game" do
+  test "join_queue/2 refuse players in existing game" do
     playera = Player.new(id: "a", name: "playera")
     playerb = Player.new(id: "b", name: "playerb")
     {:ok, pid} = GamesServer.start_link(name: nil)
 
-    assert GamesServer.join(pid, playera) == :ok
-    assert GamesServer.join(pid, playerb) == :ok
+    assert GamesServer.join_queue(pid, playera) == :ok
+    assert GamesServer.join_queue(pid, playerb) == :ok
 
-    assert GamesServer.join(pid, playera) == :error
-    assert GamesServer.join(pid, playerb) == :error
+    assert GamesServer.join_queue(pid, playera) == :error
+    assert GamesServer.join_queue(pid, playerb) == :error
   end
 
-  test "join/2 remove game after player wins" do
+  test "join_queue/2 remove game after player wins" do
     playera = Player.new(id: "a", name: "playera")
     playerb = Player.new(id: "b", name: "playerb")
     {:ok, pid} = GamesServer.start_link(name: nil)
 
-    assert GamesServer.join(pid, playera) == :ok
-    assert GamesServer.join(pid, playerb) == :ok
+    assert GamesServer.join_queue(pid, playera) == :ok
+    assert GamesServer.join_queue(pid, playerb) == :ok
 
     game = GamesServer.find_game_by_player(pid, playera)
     GamesServer.update(pid, %Game{game | winner: playera})
 
-    GamesServer.join(pid, playera)
+    GamesServer.join_queue(pid, playera)
     refute GamesServer.find_game_by_player(pid, playera)
     refute GamesServer.find_game_by_player(pid, playerb)
 
-    GamesServer.join(pid, playerb)
+    GamesServer.join_queue(pid, playerb)
     assert GamesServer.find_game_by_player(pid, playera)
     assert GamesServer.find_game_by_player(pid, playerb)
   end
 
-  test "join/2 broadcast message to subscribers of game start" do
+  test "join_queue/2 broadcast message to subscribers of game start" do
     playera = Player.new(id: "a", name: "playera")
     playerb = Player.new(id: "b", name: "playerb")
     {:ok, pid} = GamesServer.start_link(name: nil)
@@ -103,8 +103,8 @@ defmodule Connect4.GamesServerTest do
     Phoenix.PubSub.subscribe(Connect4.PubSub, "player:#{playera.id}")
     Phoenix.PubSub.subscribe(Connect4.PubSub, "player:#{playerb.id}")
 
-    assert GamesServer.join(pid, playera) == :ok
-    assert GamesServer.join(pid, playerb) == :ok
+    assert GamesServer.join_queue(pid, playera) == :ok
+    assert GamesServer.join_queue(pid, playerb) == :ok
 
     assert_receive {:game_started, %Game{}}
     assert_receive {:game_started, %Game{}}
@@ -113,7 +113,7 @@ defmodule Connect4.GamesServerTest do
   test "leave_queue/2" do
     playera = Player.new(id: "a", name: "playera")
     {:ok, pid} = GamesServer.start_link(name: nil)
-    GamesServer.join(pid, playera)
+    GamesServer.join_queue(pid, playera)
 
     GamesServer.leave_queue(pid, playera)
     refute GamesServer.waiting?(pid, playera)
@@ -138,8 +138,8 @@ defmodule Connect4.GamesServerTest do
     playerb = Player.new(id: "b", name: "playerb")
     {:ok, pid} = GamesServer.start_link(name: nil)
 
-    GamesServer.join(pid, playera)
-    GamesServer.join(pid, playerb)
+    GamesServer.join_queue(pid, playera)
+    GamesServer.join_queue(pid, playerb)
 
     game = GamesServer.find_game_by_player(pid, playera)
     updated_game = Game.drop(game, Game.player1(game), 0)
@@ -153,8 +153,8 @@ defmodule Connect4.GamesServerTest do
     playerb = Player.new(id: "b", name: "playerb")
     {:ok, pid} = GamesServer.start_link(name: nil)
 
-    GamesServer.join(pid, playera)
-    GamesServer.join(pid, playerb)
+    GamesServer.join_queue(pid, playera)
+    GamesServer.join_queue(pid, playerb)
 
     game = GamesServer.find_game_by_player(pid, playera)
 
@@ -171,8 +171,8 @@ defmodule Connect4.GamesServerTest do
     playerb = Player.new(id: "b", name: "playerb")
     {:ok, pid} = GamesServer.start_link(name: nil)
 
-    GamesServer.join(pid, playera)
-    GamesServer.join(pid, playerb)
+    GamesServer.join_queue(pid, playera)
+    GamesServer.join_queue(pid, playerb)
 
     GamesServer.quit(pid, playera)
     refute GamesServer.find_game_by_player(pid, playera)
@@ -184,8 +184,8 @@ defmodule Connect4.GamesServerTest do
     playerb = Player.new(id: "b", name: "playerb")
     {:ok, pid} = GamesServer.start_link(name: nil)
 
-    GamesServer.join(pid, playera)
-    GamesServer.join(pid, playerb)
+    GamesServer.join_queue(pid, playera)
+    GamesServer.join_queue(pid, playerb)
 
     game = GamesServer.find_game_by_player(pid, playera)
 
@@ -233,8 +233,8 @@ defmodule Connect4.GamesServerTest do
     playera = Player.new(id: "a", name: "playera")
     playerb = Player.new(id: "b", name: "playerb")
     {:ok, pid} = GamesServer.start_link(name: nil)
-    :ok = GamesServer.join(pid, playera)
-    :ok = GamesServer.join(pid, playerb)
+    :ok = GamesServer.join_queue(pid, playera)
+    :ok = GamesServer.join_queue(pid, playerb)
     assert GamesServer.request(pid, playera, playerb) == :error
   end
 
@@ -255,10 +255,10 @@ defmodule Connect4.GamesServerTest do
     refute GamesServer.waiting?(pid, playera)
     refute GamesServer.waiting?(pid, playerb)
 
-    GamesServer.join(pid, playera)
+    GamesServer.join_queue(pid, playera)
     assert GamesServer.waiting?(pid, playera)
 
-    GamesServer.join(pid, playerb)
+    GamesServer.join_queue(pid, playerb)
     refute GamesServer.waiting?(pid, playera)
     refute GamesServer.waiting?(pid, playerb)
   end

@@ -181,7 +181,7 @@ defmodule Connect4Web.Connect4Live do
   end
 
   def handle_event("play-online", _params, socket) do
-    GamesServer.join(socket.assigns.games_server_pid, socket.assigns.current_player)
+    GamesServer.join_queue(socket.assigns.games_server_pid, socket.assigns.current_player)
     {:noreply, assign(socket, :waiting, true)}
   end
 

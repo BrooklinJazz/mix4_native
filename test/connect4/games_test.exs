@@ -51,56 +51,56 @@ defmodule Connect4.GamesTest do
     assert Enum.sort(actual) == Enum.sort(expected)
   end
 
-  test "join/2 puts two players in a game" do
+  test "join_queue/2 puts two players in a game" do
     playera = Player.new(id: "a", name: "playera")
     playerb = Player.new(id: "b", name: "playerb")
 
     games = Games.new()
-    {:enqueued, games} = Games.join(games, playera)
-    {:game_started, games} = Games.join(games, playerb)
+    {:enqueued, games} = Games.join_queue(games, playera)
+    {:game_started, games} = Games.join_queue(games, playerb)
 
     assert %Game{} = game = Games.find_game_by_player(games, playera)
     assert Game.player1(game) in [playera, playerb]
     assert Game.player2(game) in [playera, playerb]
   end
 
-  test "join/2 player cannot join a game when they are already in a game" do
+  test "join_queue/2 player cannot join a game when they are already in a game" do
     playera = Player.new(id: "a", name: "playera")
     playerb = Player.new(id: "b", name: "playerb")
     games = Games.new()
 
-    {:enqueued, games} = Games.join(games, playera)
-    {:game_started, games} = Games.join(games, playerb)
-    assert {:ignored, _games} = Games.join(games, playera)
-    assert {:ignored, _games} = Games.join(games, playerb)
+    {:enqueued, games} = Games.join_queue(games, playera)
+    {:game_started, games} = Games.join_queue(games, playerb)
+    assert {:ignored, _games} = Games.join_queue(games, playera)
+    assert {:ignored, _games} = Games.join_queue(games, playerb)
   end
 
-  test "join/2 player cannot join a game when they are in a requested game" do
+  test "join_queue/2 player cannot join a game when they are in a requested game" do
     playera = Player.new(id: "a", name: "playera")
     playerb = Player.new(id: "b", name: "playerb")
     games = Games.new()
 
     {:requested, games} = Games.request(games, playera, playerb)
     {:game_started, games} = Games.request(games, playerb, playera)
-    assert {:ignored, _games} = Games.join(games, playera)
-    assert {:ignored, _games} = Games.join(games, playerb)
+    assert {:ignored, _games} = Games.join_queue(games, playera)
+    assert {:ignored, _games} = Games.join_queue(games, playerb)
   end
 
-  test "join/2 end game and add player to queue if there is already a winner" do
+  test "join_queue/2 end game and add player to queue if there is already a winner" do
     playera = Player.new(id: "a", name: "playera")
     playerb = Player.new(id: "b", name: "playerb")
     games = Games.new()
 
-    {:enqueued, games} = Games.join(games, playera)
-    {:game_started, games} = Games.join(games, playerb)
+    {:enqueued, games} = Games.join_queue(games, playera)
+    {:game_started, games} = Games.join_queue(games, playerb)
     game = Games.find_game_by_player(games, playera)
     games = Games.update(games, %Game{game | winner: playera})
 
-    {:enqueued, games} = Games.join(games, playera)
+    {:enqueued, games} = Games.join_queue(games, playera)
     refute Games.find_game_by_player(games, playerb)
     refute Games.find_game_by_player(games, playerb)
 
-    {:game_started, games} = Games.join(games, playerb)
+    {:game_started, games} = Games.join_queue(games, playerb)
     assert Games.find_game_by_player(games, playerb)
     assert Games.find_game_by_player(games, playerb)
   end
@@ -124,7 +124,7 @@ defmodule Connect4.GamesTest do
     playera = Player.new(id: "a")
 
     games = Games.new()
-    {:enqueued, games} = Games.join(games, playera)
+    {:enqueued, games} = Games.join_queue(games, playera)
     games = Games.leave_queue(games, playera)
     refute Games.waiting?(games, playera)
   end
@@ -144,8 +144,8 @@ defmodule Connect4.GamesTest do
     playerb = Player.new(id: "b", name: "playerb")
 
     games = Games.new()
-    {:enqueued, games} = Games.join(games, playera)
-    {:game_started, games} = Games.join(games, playerb)
+    {:enqueued, games} = Games.join_queue(games, playera)
+    {:game_started, games} = Games.join_queue(games, playerb)
 
     game = Games.find_game_by_player(games, playera)
     updated_game = Game.drop(game, Game.player1(game), 0)
@@ -160,9 +160,9 @@ defmodule Connect4.GamesTest do
     games = Games.new()
     refute Games.waiting?(games, playera)
     refute Games.waiting?(games, playerb)
-    {:enqueued, games} = Games.join(games, playera)
+    {:enqueued, games} = Games.join_queue(games, playera)
     assert Games.waiting?(games, playera)
-    {:game_started, games} = Games.join(games, playerb)
+    {:game_started, games} = Games.join_queue(games, playerb)
     refute Games.waiting?(games, playera)
     refute Games.waiting?(games, playerb)
   end
@@ -172,8 +172,8 @@ defmodule Connect4.GamesTest do
     playerb = Player.new(id: "b", name: "playerb")
 
     games = Games.new()
-    {:enqueued, games} = Games.join(games, playera)
-    {:game_started, games} = Games.join(games, playerb)
+    {:enqueued, games} = Games.join_queue(games, playera)
+    {:game_started, games} = Games.join_queue(games, playerb)
 
     assert {:ok, games} = Games.quit(games, playera)
     assert games.queue == []
