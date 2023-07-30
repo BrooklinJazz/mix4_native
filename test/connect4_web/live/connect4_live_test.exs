@@ -125,6 +125,16 @@ defmodule Connect4Web.Connect4LiveTest do
       assert view2 |> render() =~ "You lose"
     end
 
+    test "cancel queueing", %{conn: conn} do
+      playera = Player.new()
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      {:ok, view, _html} = conn |> player_conn(playera, games_server) |> live("/")
+
+      assert view |> element("#play-online") |> render_click() =~ "Waiting for opponent"
+      refute view |> element("#leave-queue") |> render_click() =~ "Waiting for opponent"
+      assert has_element?(view, "#play-online")
+    end
+
     test "player leaves and rejoins", %{conn: conn} do
       playera = Player.new()
       playerb = Player.new()

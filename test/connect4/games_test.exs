@@ -120,6 +120,15 @@ defmodule Connect4.GamesTest do
     assert Enum.sort(actual) == Enum.sort(expected)
   end
 
+  test "leave_queue/2" do
+    playera = Player.new(id: "a")
+
+    games = Games.new()
+    {:enqueued, games} = Games.join(games, playera)
+    games = Games.leave_queue(games, playera)
+    refute Games.waiting?(games, playera)
+  end
+
   test "outgoing_requests/2 ignore duplicates" do
     playera = Player.new(id: "a")
     playerb = Player.new(id: "b")

@@ -12,32 +12,28 @@ defmodule Connect4.GamesServer do
     {:ok, Games.new()}
   end
 
-  def incoming_requests(pid \\ __MODULE__, player) do
-    GenServer.call(pid, {:incoming_requests, player})
+  def drop(pid \\ __MODULE__, game_id, player, column_index) do
+    GenServer.call(pid, {:drop, game_id, player, column_index})
   end
 
   def find_game_by_player(pid \\ __MODULE__, player) do
     GenServer.call(pid, {:find_game_by_player, player})
   end
 
+  def incoming_requests(pid \\ __MODULE__, player) do
+    GenServer.call(pid, {:incoming_requests, player})
+  end
+
   def join(pid \\ __MODULE__, player) do
     GenServer.call(pid, {:join, player})
   end
 
+  def leave_queue(pid \\ __MODULE__, player) do
+    GenServer.call(pid, {:leave_queue, player})
+  end
+
   def outgoing_requests(pid \\ __MODULE__, player) do
     GenServer.call(pid, {:outgoing_requests, player})
-  end
-
-  def update(pid \\ __MODULE__, updated_game) do
-    GenServer.call(pid, {:update, updated_game})
-  end
-
-  def drop(pid \\ __MODULE__, game_id, player, column_index) do
-    GenServer.call(pid, {:drop, game_id, player, column_index})
-  end
-
-  def waiting?(pid \\ __MODULE__, player) do
-    GenServer.call(pid, {:waiting, player})
   end
 
   def quit(pid \\ __MODULE__, player) do
@@ -46,6 +42,14 @@ defmodule Connect4.GamesServer do
 
   def request(pid \\ __MODULE__, requester, requested) do
     GenServer.call(pid, {:request, requester, requested})
+  end
+
+  def update(pid \\ __MODULE__, updated_game) do
+    GenServer.call(pid, {:update, updated_game})
+  end
+
+  def waiting?(pid \\ __MODULE__, player) do
+    GenServer.call(pid, {:waiting, player})
   end
 
   def handle_call({:find_game_by_player, player}, _from, games) do
@@ -88,22 +92,12 @@ defmodule Connect4.GamesServer do
     end
   end
 
+  def handle_call({:leave_queue, player}, _from, games) do
+    {:reply, :ok, Games.leave_queue(games, player)}
+  end
+
   def handle_call({:outgoing_requests, player}, _from, games) do
     {:reply, Games.outgoing_requests(games, player), games}
-  end
-
-  def handle_call({:update, updated_game}, _from, games) do
-    Phoenix.PubSub.broadcast(
-      Connect4.PubSub,
-      "game:#{updated_game.id}",
-      {:game_updated, updated_game}
-    )
-
-    {:reply, :ok, Games.update(games, updated_game)}
-  end
-
-  def handle_call({:waiting, player}, _from, games) do
-    {:reply, Games.waiting?(games, player), games}
   end
 
   def handle_call({:quit, player}, _from, games) do
@@ -133,6 +127,20 @@ defmodule Connect4.GamesServer do
         broadcast_new_game(Games.find_game_by_player(games, requester))
         {:reply, :ok, games}
     end
+  end
+
+  def handle_call({:update, updated_game}, _from, games) do
+    Phoenix.PubSub.broadcast(
+      Connect4.PubSub,
+      "game:#{updated_game.id}",
+      {:game_updated, updated_game}
+    )
+
+    {:reply, :ok, Games.update(games, updated_game)}
+  end
+
+  def handle_call({:waiting, player}, _from, games) do
+    {:reply, Games.waiting?(games, player), games}
   end
 
   defp broadcast_new_game(new_game) do

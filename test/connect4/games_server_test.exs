@@ -110,6 +110,15 @@ defmodule Connect4.GamesServerTest do
     assert_receive {:game_started, %Game{}}
   end
 
+  test "leave_queue/2" do
+    playera = Player.new(id: "a", name: "playera")
+    {:ok, pid} = GamesServer.start_link(name: nil)
+    GamesServer.join(pid, playera)
+
+    GamesServer.leave_queue(pid, playera)
+    refute GamesServer.waiting?(pid, playera)
+  end
+
   test "outgoing_requests/3" do
     playera = Player.new(id: "a", name: "playera")
     playerb = Player.new(id: "b", name: "playerb")
@@ -155,22 +164,6 @@ defmodule Connect4.GamesServerTest do
     GamesServer.update(pid, updated_game)
 
     assert_receive {:game_updated, ^updated_game}
-  end
-
-  test "waiting?/2" do
-    playera = Player.new(id: "a", name: "playera")
-    playerb = Player.new(id: "b", name: "playerb")
-    {:ok, pid} = GamesServer.start_link(name: nil)
-
-    refute GamesServer.waiting?(pid, playera)
-    refute GamesServer.waiting?(pid, playerb)
-
-    GamesServer.join(pid, playera)
-    assert GamesServer.waiting?(pid, playera)
-
-    GamesServer.join(pid, playerb)
-    refute GamesServer.waiting?(pid, playera)
-    refute GamesServer.waiting?(pid, playerb)
   end
 
   test "quit/3" do
@@ -252,5 +245,21 @@ defmodule Connect4.GamesServerTest do
     Phoenix.PubSub.subscribe(Connect4.PubSub, "player:#{playera.id}")
     assert GamesServer.request(pid, playerb, playera)
     assert_receive {:game_requested, ^playerb}
+  end
+
+  test "waiting?/2" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+    {:ok, pid} = GamesServer.start_link(name: nil)
+
+    refute GamesServer.waiting?(pid, playera)
+    refute GamesServer.waiting?(pid, playerb)
+
+    GamesServer.join(pid, playera)
+    assert GamesServer.waiting?(pid, playera)
+
+    GamesServer.join(pid, playerb)
+    refute GamesServer.waiting?(pid, playera)
+    refute GamesServer.waiting?(pid, playerb)
   end
 end

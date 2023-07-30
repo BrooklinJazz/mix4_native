@@ -58,6 +58,10 @@ defmodule Connect4.Games do
     end
   end
 
+  def leave_queue(%__MODULE__{} = games, %Player{} = player) do
+    %__MODULE__{games | queue: Enum.reject(games.queue, &(&1.id == player.id))}
+  end
+
   def outgoing_requests(%__MODULE__{} = games, %Player{} = player) do
     Enum.reduce(games.requests, [], fn {requester, requested}, acc ->
       if requester == player do

@@ -92,6 +92,7 @@ defmodule Connect4Web.Connect4Live do
                 <p>Waiting for opponent...</p>
                 <.icon name="hero-arrow-path" class="ml-1 w-3 h-3 animate-spin" />
               </div>
+              <.button id="leave-queue" phx-click="leave-queue">Cancel</.button>
             <% @game == nil -> %>
               <.empty_board />
               <.button id="play-online" phx-click="play-online">Play Online</.button>
@@ -164,6 +165,11 @@ defmodule Connect4Web.Connect4Live do
       <% end %>
     </Section>
     """
+  end
+
+  def handle_event("leave-queue", _params, socket) do
+    GamesServer.leave_queue(socket.assigns.games_server_pid, socket.assigns.current_player)
+    {:noreply, assign(socket, :waiting, false)}
   end
 
   def handle_event("drop", %{"column" => column}, socket) do
