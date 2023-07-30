@@ -173,10 +173,13 @@ defmodule Connect4Web.Connect4Live do
   end
 
   def handle_event("drop", %{"column" => column}, socket) do
-    updated_game =
-      Game.drop(socket.assigns.game, socket.assigns.current_player, String.to_integer(column))
+    GamesServer.drop(
+      socket.assigns.games_server_pid,
+      socket.assigns.game.id,
+      socket.assigns.current_player,
+      String.to_integer(column)
+    )
 
-    GamesServer.update(socket.assigns.games_server_pid, updated_game)
     {:noreply, socket}
   end
 
