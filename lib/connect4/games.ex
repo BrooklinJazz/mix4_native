@@ -3,7 +3,7 @@ defmodule Connect4.Games do
 
   alias Connect4.Games.Game
   alias Connect4.Games.Player
-  defstruct active_games: %{}, queue: []
+  defstruct active_games: %{}, queue: [], requests: []
 
   def new() do
     %__MODULE__{}
@@ -23,6 +23,16 @@ defmodule Connect4.Games do
     end)
   end
 
+  def incoming_requests(%__MODULE__{} = games, %Player{} = player) do
+    Enum.reduce(games.requests, [], fn {requester, requested}, acc ->
+      if requested == player do
+        [requester | acc]
+      else
+        acc
+      end
+    end)
+  end
+
   def join(%__MODULE__{} = games, %Player{} = player) do
     existing_game = find_game_by_player(games, player)
 
@@ -36,18 +46,26 @@ defmodule Connect4.Games do
         {:ignored, games}
 
       Enum.any?(games.queue) ->
-        game = Game.new(player, hd(games.queue))
+        waiting_player = hd(games.queue)
 
-        games =
-          games
-          |> Map.put(:queue, tl(games.queue))
-          |> Map.put(:active_games, Map.put(games.active_games, game.id, game))
-
-        {:game_started, games}
+        {:game_started,
+         games
+         |> remove_from_queue(waiting_player)
+         |> add_game(Game.new(player, waiting_player))}
 
       Enum.empty?(games.queue) ->
         {:enqueued, %__MODULE__{games | queue: [player]}}
     end
+  end
+
+  def outgoing_requests(%__MODULE__{} = games, %Player{} = player) do
+    Enum.reduce(games.requests, [], fn {requester, requested}, acc ->
+      if requester == player do
+        [requested | acc]
+      else
+        acc
+      end
+    end)
   end
 
   def queue(%__MODULE__{queue: queue}), do: queue
@@ -69,5 +87,43 @@ defmodule Connect4.Games do
     else
       {:ok, games}
     end
+  end
+
+  def request(%__MODULE__{} = games, %Player{} = requester, %Player{} = requested) do
+    game = find_game_by_player(games, requester) || find_game_by_player(games, requested)
+
+    cond do
+      game ->
+        {:ignored, games}
+
+      # if both players request a game
+      {requested, requester} in games.requests ->
+        {:game_started,
+         add_game(games, Game.new(requester, requested))
+         |> remove_request({requested, requester})
+         |> remove_request({requester, requested})}
+
+      {requester, requested} in games.requests ->
+        {:ignored, games}
+
+      true ->
+        {:requested, games |> add_request(requester, requested)}
+    end
+  end
+
+  defp add_game(games, game) do
+    %__MODULE__{games | active_games: Map.put(games.active_games, game.id, game)}
+  end
+
+  defp add_request(games, requester, requested) do
+    %__MODULE__{games | requests: [{requester, requested} | games.requests]}
+  end
+
+  defp remove_request(games, {requester, requested}) do
+    %__MODULE__{games | requests: games.requests |> List.delete({requester, requested})}
+  end
+
+  defp remove_from_queue(games, player) do
+    %__MODULE__{games | queue: Enum.reject(games.queue, &(&1.id == player.id))}
   end
 end

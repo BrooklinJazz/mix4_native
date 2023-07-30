@@ -1,5 +1,6 @@
 defmodule Connect4Web.Connect4LiveTest do
   use Connect4Web.ConnCase, async: true
+  alias Connect4Web.Connect4Live
   alias Connect4.GamesServer
   alias Connect4.Games.Game
   alias Connect4.Games.Player
@@ -306,7 +307,7 @@ defmodule Connect4Web.Connect4LiveTest do
     end
   end
 
-  describe "user presence" do
+  describe "players online" do
     test "display player list", %{conn: conn} do
       playera = Player.new(name: "playera")
       playerb = Player.new(name: "playerb")
@@ -331,6 +332,111 @@ defmodule Connect4Web.Connect4LiveTest do
       assert viewc |> element("#players-list") |> render() =~ playera.name
       assert viewc |> element("#players-list") |> render() =~ playerb.name
     end
+
+    test "request game triggers already requested styles", %{conn: conn} do
+      playera = Player.new(name: "playera")
+      playerb = Player.new(name: "playerb")
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      conna = player_conn(conn, playera, games_server)
+      connb = player_conn(conn, playerb, games_server)
+      {:ok, viewa, _html} = live(conna, "/")
+      {:ok, viewb, _html} = live(connb, "/")
+
+      assert viewa |> element("#request-player-#{playerb.id}") |> render() =~ "Request"
+      viewa |> element("#request-player-#{playerb.id}") |> render_click()
+      assert viewa |> element("#request-player-#{playerb.id}") |> render() =~ "Requested"
+
+      assert viewb |> element("#request-player-#{playera.id}") |> render() =~
+               "Accept Request"
+    end
+
+    test "request and accept a game between two players", %{conn: conn} do
+      playera = Player.new(name: "playera")
+      playerb = Player.new(name: "playerb")
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      conna = player_conn(conn, playera, games_server)
+      connb = player_conn(conn, playerb, games_server)
+      {:ok, viewa, _html} = live(conna, "/")
+      {:ok, viewb, _html} = live(connb, "/")
+
+      viewa |> element("#request-player-#{playerb.id}") |> render_click()
+      viewb |> element("#request-player-#{playera.id}") |> render_click()
+
+      assert has_element?(viewa, "#board")
+      assert has_element?(viewb, "#board")
+
+      assert GamesServer.find_game_by_player(games_server, playera)
+      assert GamesServer.find_game_by_player(games_server, playerb)
+
+      assert GamesServer.find_game_by_player(games_server, playera) ==
+               GamesServer.find_game_by_player(games_server, playerb)
+    end
+
+    test "cannot request a game with a player already in a game", %{conn: conn} do
+      playera = Player.new(name: "playera")
+      playerb = Player.new(name: "playerb")
+      playerc = Player.new(name: "playerc")
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      conna = player_conn(conn, playera, games_server)
+      connb = player_conn(conn, playerb, games_server)
+      connc = player_conn(conn, playerc, games_server)
+      {:ok, viewa, _html} = live(conna, "/")
+      {:ok, viewb, _html} = live(connb, "/")
+      {:ok, viewc, _html} = live(connc, "/")
+
+      viewa |> element("#request-player-#{playerb.id}") |> render_click()
+      viewb |> element("#request-player-#{playera.id}") |> render_click()
+
+      refute viewc |> has_element?("#request-player-#{playera.id}")
+      refute viewc |> has_element?("#request-player-#{playerb.id}")
+      assert viewc |> has_element?("#currently-playing-#{playera.id}")
+      assert viewc |> has_element?("#currently-playing-#{playerb.id}")
+    end
+
+    test "quitting clears the currently playing styles", %{conn: conn} do
+      playera = Player.new(name: "playera")
+      playerb = Player.new(name: "playerb")
+      {:ok, games_server} = GamesServer.start_link(name: nil)
+      conna = player_conn(conn, playera, games_server)
+      connb = player_conn(conn, playerb, games_server)
+      {:ok, viewa, _html} = live(conna, "/")
+      {:ok, viewb, _html} = live(connb, "/")
+
+      viewa |> element("#request-player-#{playerb.id}") |> render_click()
+      viewb |> element("#request-player-#{playera.id}") |> render_click()
+      viewb |> element("#quit-game") |> render_click()
+
+      refute viewa |> has_element?("#currently-playing-#{playerb.id}")
+      refute viewb |> has_element?("#currently-playing-#{playera.id}")
+
+      refute viewa |> element("#request-player-#{playerb.id}") |> render() =~ "Requested"
+      refute viewb |> element("#request-player-#{playera.id}") |> render() =~ "Accept Request"
+    end
+  end
+
+  test "sort_players" do
+    [
+      no_request_player1,
+      no_request_player2,
+      outgoing_request_player1,
+      outgoing_request_player2,
+      incoming_request_player1,
+      incoming_request_player2
+    ] = players = Enum.map(1..6, fn _ -> Player.new() end)
+
+    assert [player1, player2, player3, player4, player5, player6] =
+             Connect4Live.sort_players(
+               Enum.shuffle(players),
+               [incoming_request_player1, incoming_request_player2],
+               [outgoing_request_player1, outgoing_request_player2]
+             )
+
+    assert incoming_request_player1 in [player1, player2]
+    assert incoming_request_player2 in [player1, player2]
+    assert outgoing_request_player1 in [player3, player4]
+    assert outgoing_request_player1 in [player3, player4]
+    assert no_request_player1 in [player5, player6]
+    assert no_request_player2 in [player5, player6]
   end
 
   defp player_conn(conn, player, game_server) do

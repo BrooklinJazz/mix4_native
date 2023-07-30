@@ -2,8 +2,8 @@ defmodule Connect4Web.Connect4Live do
   use Connect4Web, :live_view
   use LiveViewNative.LiveView
   alias Connect4.GamesServer
-  alias Connect4.Games.Game
   alias Connect4.Games.Board
+  alias Connect4.Games.Game
   alias Connect4Web.Presence
 
   @impl true
@@ -19,7 +19,7 @@ defmodule Connect4Web.Connect4Live do
     Connect4Web.Endpoint.subscribe("player:#{current_player.id}")
     Connect4Web.Endpoint.subscribe(Presence.players_topic())
 
-    Presence.track(self(), Presence.players_topic(), current_player.id, current_player)
+    Presence.track_player(self(), current_player, (game && game.id) || nil)
 
     Process.send_after(self(), :tick, 1000)
 
@@ -29,6 +29,14 @@ defmodule Connect4Web.Connect4Live do
       |> assign(:current_player, current_player)
       |> assign(:waiting, GamesServer.waiting?(games_server_pid, current_player))
       |> assign(:time_remaining, nil)
+      |> assign(
+        :outgoing_requests,
+        GamesServer.outgoing_requests(games_server_pid, current_player)
+      )
+      |> assign(
+        :incoming_requests,
+        GamesServer.incoming_requests(games_server_pid, current_player)
+      )
       |> assign_players()
       # platform_id and games_server_pid set for testing purposes
       |> assign(:platform_id, session["platform_id"] || socket.assigns.platform_id)
@@ -45,10 +53,34 @@ defmodule Connect4Web.Connect4Live do
       <section id="players-list" class="flex flex-col h-full w-1/3 max-h-[32rem] max-w-80">
         <h2>Players Online: <%= Enum.count(@players) %></h2>
         <.table id="players" rows={@players}>
-          <:col :let={player} label="username"><%= player.name %></:col>
-          <:col :let={player} label="status">online</:col>
+          <:col :let={player} label="username"><%= player.struct.name %></:col>
           <:col :let={player}>
-            <.button>Request</.button>
+            <%= cond do %>
+              <% player.game_id -> %>
+                <.button id={"currently-playing-#{player.struct.id}"} disabled>
+                  Already In Game
+                </.button>
+              <% player.struct in @outgoing_requests -> %>
+                <.button id={"request-player-#{player.struct.id}"} disabled>
+                  Requested
+                </.button>
+              <% player.struct in @incoming_requests -> %>
+                <.button
+                  id={"request-player-#{player.struct.id}"}
+                  phx-click="request"
+                  phx-value-player_id={player.struct.id}
+                >
+                  Accept Request
+                </.button>
+              <% true -> %>
+                <.button
+                  id={"request-player-#{player.struct.id}"}
+                  phx-click="request"
+                  phx-value-player_id={player.struct.id}
+                >
+                  Request
+                </.button>
+            <% end %>
           </:col>
         </.table>
       </section>
@@ -148,12 +180,39 @@ defmodule Connect4Web.Connect4Live do
     {:noreply, assign(socket, waiting: false, game: nil)}
   end
 
+  def handle_event("request", %{"player_id" => player_id}, socket) do
+    player = Enum.find(socket.assigns.players, fn %{struct: player} -> player.id == player_id end)
+
+    GamesServer.request(
+      socket.assigns.games_server_pid,
+      socket.assigns.current_player,
+      player.struct
+    )
+
+    {:noreply,
+     assign(
+       socket,
+       :outgoing_requests,
+       GamesServer.outgoing_requests(
+         socket.assigns.games_server_pid,
+         socket.assigns.current_player
+       )
+     )}
+  end
+
   @impl true
   def handle_info({:game_started, game}, socket) do
     Phoenix.PubSub.subscribe(Connect4.PubSub, "game:#{game.id}")
+    Presence.track_in_game(self(), socket.assigns.current_player, game.id)
 
     {:noreply,
      socket |> assign(:game, game) |> assign(:waiting, false) |> assign_time_remaining()}
+  end
+
+  @impl true
+  def handle_info({:game_requested, incoming_request}, socket) do
+    {:noreply,
+     assign(socket, :incoming_requests, [incoming_request | socket.assigns.incoming_requests])}
   end
 
   def handle_info({:game_updated, game}, socket) do
@@ -161,6 +220,8 @@ defmodule Connect4Web.Connect4Live do
   end
 
   def handle_info({:game_quit, player}, socket) do
+    Presence.track_in_game(self(), socket.assigns.current_player, nil)
+
     socket =
       if(socket.assigns.current_player != player) do
         put_flash(socket, :error, "Your opponent left the game.")
@@ -168,7 +229,11 @@ defmodule Connect4Web.Connect4Live do
         socket
       end
 
-    {:noreply, socket |> assign(:game, nil)}
+    {:noreply,
+     socket
+     |> assign(:game, nil)
+     |> assign_incoming_requests()
+     |> assign_outgoing_requests()}
   end
 
   def handle_info(%{event: "presence_diff", payload: _payload}, socket) do
@@ -183,6 +248,19 @@ defmodule Connect4Web.Connect4Live do
     else
       {:noreply, socket}
     end
+  end
+
+  def sort_players(players, incoming_requests, outgoing_requests) do
+    # this is likely a performance issue, but it's not a concern for this demo project
+    incoming_players = Enum.filter(players, fn player -> player in incoming_requests end)
+    outgoing_players = Enum.filter(players, fn player -> player in outgoing_requests end)
+
+    no_request_players =
+      Enum.filter(players, fn player ->
+        player not in incoming_requests and player not in outgoing_requests
+      end)
+
+    incoming_players ++ outgoing_players ++ no_request_players
   end
 
   defp assign_time_remaining(socket) do
@@ -207,18 +285,38 @@ defmodule Connect4Web.Connect4Live do
     assign(socket, :time_remaining, time_remaining)
   end
 
-  defp assign_players(socket) do
-    # this is an expensive operation, but it's fine for now.
-    # ideally we'll handle joins and leaves separately.
-    players =
-      Presence.list(Presence.players_topic())
-      |> Enum.map(fn {_user_id, data} ->
-        data[:metas]
-        |> List.first()
-      end)
-      |> Enum.reject(fn each -> each.id == socket.assigns.current_player.id end)
+  defp assign_incoming_requests(socket) do
+    assign(
+      socket,
+      :incoming_requests,
+      GamesServer.incoming_requests(
+        socket.assigns.games_server_pid,
+        socket.assigns.current_player
+      )
+    )
+  end
 
-    assign(socket, players: players)
+  defp assign_outgoing_requests(socket) do
+    assign(
+      socket,
+      :outgoing_requests,
+      GamesServer.outgoing_requests(
+        socket.assigns.games_server_pid,
+        socket.assigns.current_player
+      )
+    )
+  end
+
+  defp assign_players(socket) do
+    players =
+      Enum.reject(Presence.players(), fn player ->
+        player.struct.id == socket.assigns.current_player.id
+      end)
+
+    assign(socket,
+      players:
+        sort_players(players, socket.assigns.incoming_requests, socket.assigns.outgoing_requests)
+    )
   end
 
   defp board(assigns) do

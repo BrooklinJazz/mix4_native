@@ -36,6 +36,21 @@ defmodule Connect4.GamesServerTest do
     refute_receive {:disc_dropped, _turn_timer, _updated_game}
   end
 
+  test "incoming_requests/3" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+    playerc = Player.new(id: "c", name: "playerc")
+
+    {:ok, pid} = GamesServer.start_link(name: nil)
+    GamesServer.request(pid, playerb, playera)
+    GamesServer.request(pid, playerc, playera)
+
+    actual = GamesServer.incoming_requests(pid, playera)
+    expected = [playerb, playerc]
+
+    assert Enum.sort(actual) == Enum.sort(expected)
+  end
+
   test "join/2 adds two players to game" do
     playera = Player.new(id: "a", name: "playera")
     playerb = Player.new(id: "b", name: "playerb")
@@ -45,6 +60,7 @@ defmodule Connect4.GamesServerTest do
     assert GamesServer.join(pid, playerb) == :ok
 
     assert %Game{} = GamesServer.find_game_by_player(pid, playera)
+    assert %Game{} = GamesServer.find_game_by_player(pid, playerb)
   end
 
   test "join/2 refuse players in existing game" do
@@ -92,6 +108,20 @@ defmodule Connect4.GamesServerTest do
 
     assert_receive {:game_started, %Game{}}
     assert_receive {:game_started, %Game{}}
+  end
+
+  test "outgoing_requests/3" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+    playerc = Player.new(id: "c", name: "playerc")
+
+    {:ok, pid} = GamesServer.start_link(name: nil)
+    GamesServer.request(pid, playera, playerb)
+    GamesServer.request(pid, playera, playerc)
+
+    actual = GamesServer.outgoing_requests(pid, playera)
+    expected = [playerb, playerc]
+    assert Enum.sort(actual) == Enum.sort(expected)
   end
 
   test "update/2 updates game" do
@@ -170,5 +200,57 @@ defmodule Connect4.GamesServerTest do
 
     GamesServer.quit(pid, playera)
     assert_receive {:game_quit, ^playera}
+  end
+
+  test "request/3 two players request" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+    {:ok, pid} = GamesServer.start_link(name: nil)
+
+    Phoenix.PubSub.subscribe(Connect4.PubSub, "player:#{playera.id}")
+    Phoenix.PubSub.subscribe(Connect4.PubSub, "player:#{playerb.id}")
+
+    GamesServer.request(pid, playera, playerb)
+
+    GamesServer.request(pid, playerb, playera)
+
+    assert_receive {:game_started, %Game{}}
+    assert_receive {:game_started, %Game{}}
+
+    playera_game = GamesServer.find_game_by_player(pid, playera)
+    playerb_game = GamesServer.find_game_by_player(pid, playera)
+    assert playera_game
+    assert playerb_game
+    assert playera_game == playerb_game
+  end
+
+  test "request/3 multiple requests _ removes existing requests" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+    playerc = Player.new(id: "c", name: "playerc")
+    {:ok, pid} = GamesServer.start_link(name: nil)
+
+    GamesServer.request(pid, playera, playerb)
+    GamesServer.request(pid, playera, playerc)
+    GamesServer.request(pid, playerb, playera)
+    refute GamesServer.find_game_by_player(playerb)
+  end
+
+  test "request/3 player already in game" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+    {:ok, pid} = GamesServer.start_link(name: nil)
+    :ok = GamesServer.join(pid, playera)
+    :ok = GamesServer.join(pid, playerb)
+    assert GamesServer.request(pid, playera, playerb) == :error
+  end
+
+  test "request/3 broadcast request to subscribers" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+    {:ok, pid} = GamesServer.start_link(name: nil)
+    Phoenix.PubSub.subscribe(Connect4.PubSub, "player:#{playera.id}")
+    assert GamesServer.request(pid, playerb, playera)
+    assert_receive {:game_requested, ^playerb}
   end
 end

@@ -12,7 +12,7 @@ defmodule Connect4.Application do
       Connect4Web.Telemetry,
       # Start the PubSub system
       {Phoenix.PubSub, name: Connect4.PubSub},
-      Connect4Web.Presence,
+      {Connect4Web.Presence, name: Connect4Web.Presence},
       # Start the Endpoint (http/https)
       Connect4Web.Endpoint,
       # Start a worker by calling: Connect4.Worker.start_link(arg)

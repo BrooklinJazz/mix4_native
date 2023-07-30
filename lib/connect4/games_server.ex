@@ -12,12 +12,20 @@ defmodule Connect4.GamesServer do
     {:ok, Games.new()}
   end
 
+  def incoming_requests(pid \\ __MODULE__, player) do
+    GenServer.call(pid, {:incoming_requests, player})
+  end
+
   def find_game_by_player(pid \\ __MODULE__, player) do
     GenServer.call(pid, {:find_game_by_player, player})
   end
 
   def join(pid \\ __MODULE__, player) do
     GenServer.call(pid, {:join, player})
+  end
+
+  def outgoing_requests(pid \\ __MODULE__, player) do
+    GenServer.call(pid, {:outgoing_requests, player})
   end
 
   def update(pid \\ __MODULE__, updated_game) do
@@ -34,6 +42,10 @@ defmodule Connect4.GamesServer do
 
   def quit(pid \\ __MODULE__, player) do
     GenServer.call(pid, {:quit, player})
+  end
+
+  def request(pid \\ __MODULE__, requester, requested) do
+    GenServer.call(pid, {:request, requester, requested})
   end
 
   def handle_call({:find_game_by_player, player}, _from, games) do
@@ -58,6 +70,10 @@ defmodule Connect4.GamesServer do
     end
   end
 
+  def handle_call({:incoming_requests, player}, _from, games) do
+    {:reply, Games.incoming_requests(games, player), games}
+  end
+
   def handle_call({:join, player}, _from, games) do
     case Games.join(games, player) do
       {:enqueued, games} ->
@@ -70,6 +86,10 @@ defmodule Connect4.GamesServer do
         broadcast_new_game(Games.find_game_by_player(games, player))
         {:reply, :ok, games}
     end
+  end
+
+  def handle_call({:outgoing_requests, player}, _from, games) do
+    {:reply, Games.outgoing_requests(games, player), games}
   end
 
   def handle_call({:update, updated_game}, _from, games) do
@@ -93,6 +113,26 @@ defmodule Connect4.GamesServer do
     Phoenix.PubSub.broadcast(Connect4.PubSub, "game:#{game.id}", {:game_quit, player})
 
     {:reply, :ok, games}
+  end
+
+  def handle_call({:request, requester, requested}, _from, games) do
+    case Games.request(games, requester, requested) do
+      {:requested, games} ->
+        Phoenix.PubSub.broadcast(
+          Connect4.PubSub,
+          "player:#{requested.id}",
+          {:game_requested, requester}
+        )
+
+        {:reply, :ok, games}
+
+      {:ignored, games} ->
+        {:reply, :error, games}
+
+      {:game_started, games} ->
+        broadcast_new_game(Games.find_game_by_player(games, requester))
+        {:reply, :ok, games}
+    end
   end
 
   defp broadcast_new_game(new_game) do

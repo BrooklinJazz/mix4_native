@@ -1,5 +1,6 @@
 defmodule Connect4.Games.Player do
-  defstruct [:id, :name]
+  @enforce_keys [:id, :name]
+  defstruct @enforce_keys
 
   def new(fields \\ []) do
     fields =

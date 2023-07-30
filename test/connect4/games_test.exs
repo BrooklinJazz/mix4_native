@@ -36,6 +36,21 @@ defmodule Connect4.GamesTest do
     assert %Game{} = Games.find_game_by_player(games, player)
   end
 
+  test "incoming_requests/2" do
+    playera = Player.new(id: "a")
+    playerb = Player.new(id: "b")
+    playerc = Player.new(id: "c")
+
+    games = Games.new()
+    {:requested, games} = Games.request(games, playerb, playera)
+    {:requested, games} = Games.request(games, playerc, playera)
+
+    actual = Games.incoming_requests(games, playera)
+    expected = [playerb, playerc]
+
+    assert Enum.sort(actual) == Enum.sort(expected)
+  end
+
   test "join/2 puts two players in a game" do
     playera = Player.new(id: "a", name: "playera")
     playerb = Player.new(id: "b", name: "playerb")
@@ -60,6 +75,17 @@ defmodule Connect4.GamesTest do
     assert {:ignored, _games} = Games.join(games, playerb)
   end
 
+  test "join/2 player cannot join a game when they are in a requested game" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+    games = Games.new()
+
+    {:requested, games} = Games.request(games, playera, playerb)
+    {:game_started, games} = Games.request(games, playerb, playera)
+    assert {:ignored, _games} = Games.join(games, playera)
+    assert {:ignored, _games} = Games.join(games, playerb)
+  end
+
   test "join/2 end game and add player to queue if there is already a winner" do
     playera = Player.new(id: "a", name: "playera")
     playerb = Player.new(id: "b", name: "playerb")
@@ -77,6 +103,31 @@ defmodule Connect4.GamesTest do
     {:game_started, games} = Games.join(games, playerb)
     assert Games.find_game_by_player(games, playerb)
     assert Games.find_game_by_player(games, playerb)
+  end
+
+  test "outgoing_requests/2" do
+    playera = Player.new(id: "a")
+    playerb = Player.new(id: "b")
+    playerc = Player.new(id: "c")
+
+    games = Games.new()
+    {:requested, games} = Games.request(games, playera, playerb)
+    {:requested, games} = Games.request(games, playera, playerc)
+
+    actual = Games.outgoing_requests(games, playera)
+    expected = [playerb, playerc]
+
+    assert Enum.sort(actual) == Enum.sort(expected)
+  end
+
+  test "outgoing_requests/2 ignore duplicates" do
+    playera = Player.new(id: "a")
+    playerb = Player.new(id: "b")
+
+    games = Games.new()
+    {:requested, games} = Games.request(games, playera, playerb)
+    {:ignored, games} = Games.request(games, playera, playerb)
+    assert Games.outgoing_requests(games, playera) == [playerb]
   end
 
   test "update/2" do
@@ -113,11 +164,40 @@ defmodule Connect4.GamesTest do
 
     games = Games.new()
     {:enqueued, games} = Games.join(games, playera)
-    {:game_started, games} = Games.join(games, playera)
+    {:game_started, games} = Games.join(games, playerb)
 
     assert {:ok, games} = Games.quit(games, playera)
+    assert games.queue == []
 
     assert Games.find_game_by_player(games, playera) == nil
     assert Games.find_game_by_player(games, playerb) == nil
+  end
+
+  test "request/3" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+
+    games = Games.new()
+    {:requested, games} = Games.request(games, playera, playerb)
+    {:game_started, games} = Games.request(games, playerb, playera)
+
+    assert Games.find_game_by_player(games, playera)
+    assert Games.find_game_by_player(games, playerb)
+
+    # make sure we cleanup the request
+    assert games.requests == []
+  end
+
+  test "request/3 requester already in a game" do
+    playera = Player.new(id: "a", name: "playera")
+    playerb = Player.new(id: "b", name: "playerb")
+
+    games = Games.new()
+    {:requested, games} = Games.request(games, playera, playerb)
+    {:game_started, games} = Games.request(games, playerb, playera)
+    {:ignored, games} = Games.request(games, playerb, playera)
+
+    # make sure there is no request
+    assert games.requests == []
   end
 end
