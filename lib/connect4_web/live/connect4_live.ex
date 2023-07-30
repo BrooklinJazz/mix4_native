@@ -156,7 +156,7 @@ defmodule Connect4Web.Connect4Live do
           <%= for {column, x} <- Enum.with_index(Board.transpose(Game.board(@game))) do %>
             <VStack id={"column-#{x}"} phx-click="drop" phx-value-column={x}>
               <%= for {cell, y} <- Enum.with_index(column) do %>
-                <Circle id={"cell-#{x}-#{y}"} data-color={cell} fill-color={platform_color(:swiftui, cell)} />
+                <Circle id={"cell-#{x}-#{y}"} data-color={cell} fill-color={hex_code(cell)} />
               <% end %>
             </VStack>
           <% end %>
@@ -385,15 +385,7 @@ defmodule Connect4Web.Connect4Live do
     """
   end
 
-  defp platform_color(:web, cell) do
-    case cell do
-      :red -> "bg-red-400"
-      :yellow -> "bg-yellow-400"
-      _ -> "bg-black"
-    end
-  end
-
-  defp platform_color(:swiftui, cell) do
+  defp hex_code(cell) do
     case cell do
       :red -> "#FF0000"
       :yellow -> "#FFC82F"
