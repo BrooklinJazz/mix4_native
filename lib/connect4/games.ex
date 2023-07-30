@@ -14,32 +14,26 @@ defmodule Connect4.Games do
   end
 
   def find_game_by_player(%__MODULE__{active_games: active_games}, %Player{} = player) do
-    Enum.reduce_while(active_games, nil, fn {_, game}, acc ->
-      if game.player1 == player || game.player2 == player do
-        {:halt, game}
-      else
-        {:cont, acc}
-      end
+    Enum.find_value(active_games, fn {_, game} ->
+      if player.id in [game.player1.id, game.player2.id], do: game
     end)
   end
 
   def incoming_requests(%__MODULE__{} = games, %Player{} = player) do
     Enum.reduce(games.requests, [], fn {requester, requested}, acc ->
-      if requested == player do
-        [requester | acc]
-      else
-        acc
-      end
+      if requested == player, do: [requester | acc], else: acc
     end)
   end
 
   def join_queue(%__MODULE__{} = games, %Player{} = player) do
     existing_game = find_game_by_player(games, player)
+    should_cleanup_game = existing_game && Game.finished?(existing_game)
 
     cond do
-      existing_game && Game.finished?(existing_game) ->
-        active_games = Map.delete(games.active_games, existing_game.id)
-        join_queue(%__MODULE__{games | active_games: active_games}, player)
+      should_cleanup_game ->
+        games
+        |> remove_game(existing_game)
+        |> join_queue(player)
 
       # ignore if player is already in a game
       existing_game ->
@@ -99,10 +93,12 @@ defmodule Connect4.Games do
       # if both players request a game
       {requested, requester} in games.requests ->
         {:game_started,
-         add_game(games, Game.new(requester, requested))
+         games
+         |> add_game(Game.new(requester, requested))
          |> remove_request({requested, requester})
          |> remove_request({requester, requested})}
 
+      # ignore duplicate requests
       {requester, requested} in games.requests ->
         {:ignored, games}
 
@@ -113,6 +109,10 @@ defmodule Connect4.Games do
 
   defp add_game(games, game) do
     %__MODULE__{games | active_games: Map.put(games.active_games, game.id, game)}
+  end
+
+  defp remove_game(games, game) do
+    %__MODULE__{games | active_games: Map.delete(games.active_games, game.id)}
   end
 
   defp add_request(games, requester, requested) do

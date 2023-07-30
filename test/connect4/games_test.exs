@@ -24,16 +24,14 @@ defmodule Connect4.GamesTest do
     assert Games.find_game_by_player(games, Player.new(id: "a")) == nil
   end
 
-  test "find_game_by_player/2 find for player 1 _ game exists" do
-    player = Player.new(id: "a")
-    games = %Games{active_games: %{"some key" => %Game{player1: player}}}
-    assert %Game{} = Games.find_game_by_player(games, player)
-  end
+  test "find_game_by_player/2" do
+    playera = Player.new(id: "a")
+    playerb = Player.new(id: "a")
+    game = Game.new(playera, playerb)
+    games = %Games{active_games: %{"some key" => game}}
 
-  test "find_game_by_player/2 find for player 2 _ game exists" do
-    player = Player.new(id: "a")
-    games = %Games{active_games: %{"some key" => %Game{player2: player}}}
-    assert %Game{} = Games.find_game_by_player(games, player)
+    assert Games.find_game_by_player(games, playera) == game
+    assert Games.find_game_by_player(games, playerb) == game
   end
 
   test "incoming_requests/2" do
