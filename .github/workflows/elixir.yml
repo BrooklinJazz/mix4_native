@@ -102,12 +102,5 @@ jobs:
       # - name: Credo Check
       #   run: mix credo
 
-      - name: Run Web Tests
-        env: 
-          PLATFORM_ID: "web"
-        run: mix test --exclude=swiftui
-
-      - name: Run Native Tests
-        env: 
-          PLATFORM_ID: "swiftui"
-        run: mix test --exclude=web
+      - name: Run Tests
+        run: mix test

@@ -7,10 +7,10 @@ defmodule Connect4Web.Connect4Live do
   alias Connect4Web.Presence
 
   @impl true
-  def mount(_params, session, socket) do
-    current_player = session["current_player"]
-    games_server_pid = session["game_server_pid"] || GamesServer
-    game = GamesServer.find_game_by_player(games_server_pid, current_player)
+  def mount(_params, %{"current_player" => current_player} = session, socket) do
+    # games_server used for testing to avoid issues with singleton
+    games_server = session["games_server"] || GamesServer
+    game = GamesServer.find_game_by_player(games_server, current_player)
 
     if game && connected?(socket) do
       Connect4Web.Endpoint.subscribe("game:#{game.id}")
@@ -27,11 +27,9 @@ defmodule Connect4Web.Connect4Live do
       socket
       |> assign(:game, game)
       |> assign(:current_player, current_player)
-      |> assign(:waiting, GamesServer.waiting?(games_server_pid, current_player))
+      |> assign(:waiting, GamesServer.waiting?(games_server, current_player))
       |> assign(:time_remaining, nil)
-      # platform_id and games_server_pid set for testing purposes
-      |> assign(:platform_id, session["platform_id"] || socket.assigns.platform_id)
-      |> assign(:games_server_pid, games_server_pid)
+      |> assign(:games_server, games_server)
       |> assign_incoming_requests()
       |> assign_outgoing_requests()
       |> assign_players()
@@ -131,13 +129,13 @@ defmodule Connect4Web.Connect4Live do
     """
   end
 
-  @impl true
   def render(%{platform_id: :swiftui} = assigns) do
     ~SWIFTUI"""
     <Section>
     <%= cond do %>
       <% @waiting -> %>
         <Text>Waiting for opponent</Text>
+        <Button id="leave-queue" phx-click="leave-queue">Cancel</Button>
       <% @game == nil -> %>
         <Button id="play-online" phx-click="play-online">Play Online</Button>
       <% Game.winner(@game) == @current_player -> %>
@@ -152,6 +150,9 @@ defmodule Connect4Web.Connect4Live do
         <% else %>
           <Text id="opponents-turn">Opponent turn</Text>
         <% end %>
+        <Text id="turn-timer">
+          <%= @time_remaining %>
+        </Text>
         <HStack id="board">
           <%= for {column, x} <- Enum.with_index(Board.transpose(Game.board(@game))) do %>
             <VStack id={"column-#{x}"} phx-click="drop" phx-value-column={x}>
@@ -168,13 +169,13 @@ defmodule Connect4Web.Connect4Live do
   end
 
   def handle_event("leave-queue", _params, socket) do
-    GamesServer.leave_queue(socket.assigns.games_server_pid, socket.assigns.current_player)
+    GamesServer.leave_queue(socket.assigns.games_server, socket.assigns.current_player)
     {:noreply, assign(socket, :waiting, false)}
   end
 
   def handle_event("drop", %{"column" => column}, socket) do
     GamesServer.drop(
-      socket.assigns.games_server_pid,
+      socket.assigns.games_server,
       socket.assigns.game.id,
       socket.assigns.current_player,
       String.to_integer(column)
@@ -184,12 +185,12 @@ defmodule Connect4Web.Connect4Live do
   end
 
   def handle_event("play-online", _params, socket) do
-    GamesServer.join_queue(socket.assigns.games_server_pid, socket.assigns.current_player)
+    GamesServer.join_queue(socket.assigns.games_server, socket.assigns.current_player)
     {:noreply, assign(socket, :waiting, true)}
   end
 
   def handle_event("quit", _params, socket) do
-    GamesServer.quit(socket.assigns.games_server_pid, socket.assigns.current_player)
+    GamesServer.quit(socket.assigns.games_server, socket.assigns.current_player)
     {:noreply, assign(socket, waiting: false, game: nil)}
   end
 
@@ -197,7 +198,7 @@ defmodule Connect4Web.Connect4Live do
     player = Enum.find(socket.assigns.players, fn %{struct: player} -> player.id == player_id end)
 
     GamesServer.request(
-      socket.assigns.games_server_pid,
+      socket.assigns.games_server,
       socket.assigns.current_player,
       player.struct
     )
@@ -207,7 +208,7 @@ defmodule Connect4Web.Connect4Live do
        socket,
        :outgoing_requests,
        GamesServer.outgoing_requests(
-         socket.assigns.games_server_pid,
+         socket.assigns.games_server,
          socket.assigns.current_player
        )
      )}
@@ -290,7 +291,7 @@ defmodule Connect4Web.Connect4Live do
     if current_player_ran_out_of_time do
       # it's a bit hacky to handle running out of time in the LiveView, but it's an easy implementation for now.
       GamesServer.update(
-        socket.assigns.games_server_pid,
+        socket.assigns.games_server,
         Game.run_out_of_time(game, socket.assigns.current_player)
       )
     end
@@ -303,7 +304,7 @@ defmodule Connect4Web.Connect4Live do
       socket,
       :incoming_requests,
       GamesServer.incoming_requests(
-        socket.assigns.games_server_pid,
+        socket.assigns.games_server,
         socket.assigns.current_player
       )
     )
@@ -314,7 +315,7 @@ defmodule Connect4Web.Connect4Live do
       socket,
       :outgoing_requests,
       GamesServer.outgoing_requests(
-        socket.assigns.games_server_pid,
+        socket.assigns.games_server,
         socket.assigns.current_player
       )
     )
