@@ -3,7 +3,7 @@ defmodule LiveViewNative.Test do
 
   using do
     quote do
-      use Connect4Web.ConnCase
+      use Mix4Web.ConnCase
       import unquote(__MODULE__)
       ExUnit.Case.register_attribute(__MODULE__, :platform)
       ExUnit.Case.register_attribute(__MODULE__, :platforms)

@@ -8,13 +8,13 @@
 import Config
 
 # Configures the endpoint
-config :connect4, Connect4Web.Endpoint,
+config :mix4, Mix4Web.Endpoint,
   url: [host: "localhost"],
   render_errors: [
-    formats: [html: Connect4Web.ErrorHTML, json: Connect4Web.ErrorJSON],
+    formats: [html: Mix4Web.ErrorHTML, json: Mix4Web.ErrorJSON],
     layout: false
   ],
-  pubsub_server: Connect4.PubSub,
+  pubsub_server: Mix4.PubSub,
   live_view: [signing_salt: "jHOA2M6c"]
 
 # Configure esbuild (the version is required)
@@ -50,7 +50,7 @@ config :phoenix, :json_library, Jason
 config :live_view_native, :platforms, [LiveViewNativeSwiftUi.Platform]
 
 config :live_view_native, LiveViewNativeSwiftUi.Platform,
-  app_name: "Connect4",
+  app_name: "Mix4",
   custom_modifiers: []
 
 # Import environment specific config. This must remain at the bottom

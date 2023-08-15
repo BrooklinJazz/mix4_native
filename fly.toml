@@ -1,15 +1,15 @@
-# fly.toml app configuration file generated for connect4native on 2023-07-26T08:45:26-07:00
+# fly.toml app configuration file generated for mix4native on 2023-07-26T08:45:26-07:00
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = "connect4native"
+app = "mix4native"
 primary_region = "ord"
 kill_signal = "SIGTERM"
 swap_size_mb = 512
 
 [env]
-  PHX_HOST = "connect4native.fly.dev"
+  PHX_HOST = "mix4native.fly.dev"
   PORT = "8080"
 
 [http_service]

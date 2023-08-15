@@ -1,4 +1,4 @@
-# Connect4
+# Mix4
 
 To start your Phoenix server:
 
