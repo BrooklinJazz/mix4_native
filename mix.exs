@@ -44,11 +44,9 @@ defmodule Mix4.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
-      {:live_view_native, "~> 0.0.9-rc.0"},
-      # {:live_view_native, path: "../live_view_native"},
+      {:live_view_native, github: "https://github.com/liveview-native/liveview-client-swiftui", branch: "main"},
       {:live_view_native_swift_ui,
        git: "https://github.com/liveview-native/liveview-client-swiftui", branch: "main"},
-      {:faker, "~> 0.17.0"}
     ]
   end
 
