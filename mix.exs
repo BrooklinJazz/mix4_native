@@ -35,7 +35,7 @@ defmodule Mix4.MixProject do
       {:phoenix, "~> 1.7.7"},
       {:phoenix_html, "~> 3.3"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_view, "~> 0.19.0", override: true},
+      {:phoenix_live_view, "~> 0.19.0"},
       {:floki, ">= 0.30.0", only: :test},
       {:phoenix_live_dashboard, "~> 0.8.0"},
       {:esbuild, "~> 0.7", runtime: Mix.env() == :dev},
@@ -44,7 +44,7 @@ defmodule Mix4.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
-      {:live_view_native, github: "https://github.com/liveview-native/liveview-client-swiftui", branch: "main"},
+      {:live_view_native, git: "https://github.com/liveview-native/live_view_native", branch: "main"},
       {:live_view_native_swift_ui,
        git: "https://github.com/liveview-native/liveview-client-swiftui", branch: "main"},
     ]

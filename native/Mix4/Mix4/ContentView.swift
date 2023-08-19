@@ -6,9 +6,6 @@
 //
 
 import SwiftUI
-import CoreData
-
-import SwiftUI
 import LiveViewNative
 
 struct ContentView: View {
