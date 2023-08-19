@@ -262,4 +262,17 @@ defmodule Mix4.GamesServerTest do
     refute GamesServer.waiting?(pid, playera)
     refute GamesServer.waiting?(pid, playerb)
   end
+
+  test "wipe/0 reset gameserver state" do
+    {:ok, pid} = GamesServer.start_link(name: nil)
+    init_state = :sys.get_state(pid)
+
+    player = Player.new(id: "a", name: "playera")
+    GamesServer.join_queue(pid, player)
+
+    assert :sys.get_state(pid) != init_state
+    GamesServer.wipe(pid)
+
+    assert :sys.get_state(pid) == init_state
+  end
 end
