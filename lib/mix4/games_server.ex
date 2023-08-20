@@ -114,10 +114,12 @@ defmodule Mix4.GamesServer do
 
   def handle_call({:quit, player}, _from, games) do
     game = Games.find_game_by_player(games, player)
+
+    if game && !Game.winner(game) do
+      Phoenix.PubSub.broadcast(Mix4.PubSub, "game:#{game.id}", {:game_quit, player})
+    end
+
     {:ok, games} = Games.quit(games, player)
-
-    Phoenix.PubSub.broadcast(Mix4.PubSub, "game:#{game.id}", {:game_quit, player})
-
     {:reply, :ok, games}
   end
 
@@ -155,7 +157,7 @@ defmodule Mix4.GamesServer do
     {:reply, Games.waiting?(games, player), games}
   end
 
-  def handle_call(:wipe, _from, games) do
+  def handle_call(:wipe, _from, _games) do
     {:reply, :ok, Games.new()}
   end
 

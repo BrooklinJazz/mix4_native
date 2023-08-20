@@ -1,6 +1,7 @@
 defmodule Mix4.Games.Game do
   require Logger
   alias Mix4.Games.Board
+  @turn_duration 20
 
   defstruct [
     :id,
@@ -20,7 +21,7 @@ defmodule Mix4.Games.Game do
       player1: player1,
       player2: player2,
       current_turn: player1,
-      turn_end_time: in_thirty_seconds()
+      turn_end_time: next_turn_end_time()
     }
   end
 
@@ -34,8 +35,8 @@ defmodule Mix4.Games.Game do
       game_winner =
         case Board.winner(board) do
           nil -> nil
-          :red -> game.player1
-          :yellow -> game.player2
+          :player1 -> game.player1
+          :player2 -> game.player2
         end
 
       %__MODULE__{
@@ -43,7 +44,7 @@ defmodule Mix4.Games.Game do
         | board: board,
           current_turn: next_player(game),
           winner: game_winner,
-          turn_end_time: in_thirty_seconds()
+          turn_end_time: next_turn_end_time()
       }
     else
       game
@@ -54,8 +55,8 @@ defmodule Mix4.Games.Game do
 
   def marker(%__MODULE__{player1: player1, player2: player2}, player) do
     case player do
-      ^player1 -> :red
-      ^player2 -> :yellow
+      ^player1 -> :player1
+      ^player2 -> :player2
     end
   end
 
@@ -82,7 +83,7 @@ defmodule Mix4.Games.Game do
       %__MODULE__{
         game
         | current_turn: next_player(game),
-          turn_end_time: in_thirty_seconds()
+          turn_end_time: next_turn_end_time()
       }
     else
       game
@@ -90,5 +91,5 @@ defmodule Mix4.Games.Game do
   end
 
   def winner(%__MODULE__{} = game), do: game.winner
-  defp in_thirty_seconds, do: DateTime.add(DateTime.utc_now(:second), 30, :second)
+  defp next_turn_end_time, do: DateTime.add(DateTime.utc_now(:second), @turn_duration, :second)
 end

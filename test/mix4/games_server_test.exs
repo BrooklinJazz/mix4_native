@@ -177,6 +177,10 @@ defmodule Mix4.GamesServerTest do
     GamesServer.quit(pid, playera)
     refute GamesServer.find_game_by_player(pid, playera)
     refute GamesServer.find_game_by_player(pid, playerb)
+
+    GamesServer.quit(pid, playerb)
+    refute GamesServer.find_game_by_player(pid, playera)
+    refute GamesServer.find_game_by_player(pid, playerb)
   end
 
   test "quit/2 broadcast quit game to subscribers" do

@@ -19,27 +19,27 @@ defmodule Mix4.Games.BoardTest do
     test "column 1" do
       board = Board.new()
 
-      assert Board.drop(board, 0, :red) ==
+      assert Board.drop(board, 0, :player1) ==
                [
                  [nil, nil, nil, nil, nil, nil, nil],
                  [nil, nil, nil, nil, nil, nil, nil],
                  [nil, nil, nil, nil, nil, nil, nil],
                  [nil, nil, nil, nil, nil, nil, nil],
                  [nil, nil, nil, nil, nil, nil, nil],
-                 [:red, nil, nil, nil, nil, nil, nil]
+                 [:player1, nil, nil, nil, nil, nil, nil]
                ]
     end
 
     test "column 6" do
       board = Board.new()
 
-      assert Board.drop(board, 6, :red) == [
+      assert Board.drop(board, 6, :player1) == [
                [nil, nil, nil, nil, nil, nil, nil],
                [nil, nil, nil, nil, nil, nil, nil],
                [nil, nil, nil, nil, nil, nil, nil],
                [nil, nil, nil, nil, nil, nil, nil],
                [nil, nil, nil, nil, nil, nil, nil],
-               [nil, nil, nil, nil, nil, nil, :red]
+               [nil, nil, nil, nil, nil, nil, :player1]
              ]
     end
 
@@ -47,19 +47,19 @@ defmodule Mix4.Games.BoardTest do
       board = Board.new()
 
       assert board
-             |> Board.drop(0, :red)
-             |> Board.drop(0, :red)
-             |> Board.drop(0, :red)
-             |> Board.drop(0, :red)
-             |> Board.drop(0, :red)
-             |> Board.drop(0, :red) ==
+             |> Board.drop(0, :player1)
+             |> Board.drop(0, :player1)
+             |> Board.drop(0, :player1)
+             |> Board.drop(0, :player1)
+             |> Board.drop(0, :player1)
+             |> Board.drop(0, :player1) ==
                [
-                 [:red, nil, nil, nil, nil, nil, nil],
-                 [:red, nil, nil, nil, nil, nil, nil],
-                 [:red, nil, nil, nil, nil, nil, nil],
-                 [:red, nil, nil, nil, nil, nil, nil],
-                 [:red, nil, nil, nil, nil, nil, nil],
-                 [:red, nil, nil, nil, nil, nil, nil]
+                 [:player1, nil, nil, nil, nil, nil, nil],
+                 [:player1, nil, nil, nil, nil, nil, nil],
+                 [:player1, nil, nil, nil, nil, nil, nil],
+                 [:player1, nil, nil, nil, nil, nil, nil],
+                 [:player1, nil, nil, nil, nil, nil, nil],
+                 [:player1, nil, nil, nil, nil, nil, nil]
                ]
     end
 
@@ -67,13 +67,13 @@ defmodule Mix4.Games.BoardTest do
       board = Board.new()
 
       assert board
-             |> Board.drop(0, :red)
-             |> Board.drop(0, :red)
-             |> Board.drop(0, :red)
-             |> Board.drop(0, :red)
-             |> Board.drop(0, :red)
-             |> Board.drop(0, :red)
-             |> Board.drop(0, :red) == {:error, :column_full}
+             |> Board.drop(0, :player1)
+             |> Board.drop(0, :player1)
+             |> Board.drop(0, :player1)
+             |> Board.drop(0, :player1)
+             |> Board.drop(0, :player1)
+             |> Board.drop(0, :player1)
+             |> Board.drop(0, :player1) == {:error, :column_full}
     end
   end
 
@@ -83,19 +83,19 @@ defmodule Mix4.Games.BoardTest do
   end
 
   test "drop_index/2 one row filled board" do
-    board = Board.drop(Board.new(), 0, :red)
+    board = Board.drop(Board.new(), 0, :player1)
     assert Board.drop_index(board, 0) == 4
   end
 
   test "drop_index/2 full board" do
     board =
       Board.new()
-      |> Board.drop(0, :red)
-      |> Board.drop(0, :red)
-      |> Board.drop(0, :red)
-      |> Board.drop(0, :red)
-      |> Board.drop(0, :red)
-      |> Board.drop(0, :red)
+      |> Board.drop(0, :player1)
+      |> Board.drop(0, :player1)
+      |> Board.drop(0, :player1)
+      |> Board.drop(0, :player1)
+      |> Board.drop(0, :player1)
+      |> Board.drop(0, :player1)
 
     assert Board.drop_index(board, 0) == -1
   end
@@ -114,38 +114,38 @@ defmodule Mix4.Games.BoardTest do
       assert Board.winner(board) == nil
     end
 
-    test "red column" do
+    test "player1 column" do
       board = [
-        [:red, nil, nil, nil, nil, nil, nil],
-        [:red, nil, nil, nil, nil, nil, nil],
-        [:red, nil, nil, nil, nil, nil, nil],
-        [:red, nil, nil, nil, nil, nil, nil],
+        [:player1, nil, nil, nil, nil, nil, nil],
+        [:player1, nil, nil, nil, nil, nil, nil],
+        [:player1, nil, nil, nil, nil, nil, nil],
+        [:player1, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil]
       ]
 
-      assert Board.winner(board) == :red
+      assert Board.winner(board) == :player1
     end
 
-    test "yellow row" do
+    test "player2 row" do
       board = [
         [nil, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
-        [:yellow, :yellow, :yellow, :yellow, nil, nil, nil],
+        [:player2, :player2, :player2, :player2, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil]
       ]
 
-      assert Board.winner(board) == :yellow
+      assert Board.winner(board) == :player2
     end
 
     test "invalid due to multiple winners" do
       board = [
         [nil, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
-        [:red, :red, :red, :red, nil, nil, nil],
-        [:yellow, :yellow, :yellow, :yellow, nil, nil, nil],
+        [:player1, :player1, :player1, :player1, nil, nil, nil],
+        [:player2, :player2, :player2, :player2, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil]
       ]
@@ -161,10 +161,10 @@ defmodule Mix4.Games.BoardTest do
   describe "winners/1" do
     test "one column winner" do
       board = [
-        [:red, nil, nil, nil, nil, nil, nil],
-        [:red, nil, nil, nil, nil, nil, nil],
-        [:red, nil, nil, nil, nil, nil, nil],
-        [:red, nil, nil, nil, nil, nil, nil],
+        [:player1, nil, nil, nil, nil, nil, nil],
+        [:player1, nil, nil, nil, nil, nil, nil],
+        [:player1, nil, nil, nil, nil, nil, nil],
+        [:player1, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil]
       ]
@@ -175,12 +175,12 @@ defmodule Mix4.Games.BoardTest do
 
     test "multiple column winners" do
       board = [
-        [:red, nil, nil, nil, nil, nil, :yellow],
-        [:red, nil, nil, :red, nil, nil, :yellow],
-        [:red, :red, nil, :red, nil, nil, :yellow],
-        [:red, :red, nil, :red, nil, nil, :yellow],
-        [nil, :red, nil, :red, nil, nil, :red],
-        [nil, :red, nil, :red, nil, nil, nil]
+        [:player1, nil, nil, nil, nil, nil, :player2],
+        [:player1, nil, nil, :player1, nil, nil, :player2],
+        [:player1, :player1, nil, :player1, nil, nil, :player2],
+        [:player1, :player1, nil, :player1, nil, nil, :player2],
+        [nil, :player1, nil, :player1, nil, nil, :player1],
+        [nil, :player1, nil, :player1, nil, nil, nil]
       ]
 
       assert Board.winners(board) ==
@@ -195,7 +195,7 @@ defmodule Mix4.Games.BoardTest do
 
     test "one winning right facing row" do
       board = [
-        [nil, nil, nil, :red, :red, :red, :red],
+        [nil, nil, nil, :player1, :player1, :player1, :player1],
         [nil, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
@@ -209,7 +209,7 @@ defmodule Mix4.Games.BoardTest do
 
     test "one winning left facing row" do
       board = [
-        [:red, :red, :red, :red, nil, nil, nil],
+        [:player1, :player1, :player1, :player1, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
@@ -223,12 +223,12 @@ defmodule Mix4.Games.BoardTest do
 
     test "multiple row winners" do
       board = [
-        [nil, nil, nil, :red, :red, :red, :red],
+        [nil, nil, nil, :player1, :player1, :player1, :player1],
         [nil, nil, nil, nil, nil, nil, nil],
-        [nil, :red, :red, :red, :red, :red, nil],
+        [nil, :player1, :player1, :player1, :player1, :player1, nil],
         [nil, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
-        [:yellow, :yellow, :yellow, :yellow, nil, nil, nil]
+        [:player2, :player2, :player2, :player2, nil, nil, nil]
       ]
 
       assert Board.winners(board) == [
@@ -241,10 +241,10 @@ defmodule Mix4.Games.BoardTest do
 
     test "one diagonal up right winner" do
       board = [
-        [nil, nil, nil, :red, nil, nil, nil],
-        [nil, nil, :red, nil, nil, nil, nil],
-        [nil, :red, nil, nil, nil, nil, nil],
-        [:red, nil, nil, nil, nil, nil, nil],
+        [nil, nil, nil, :player1, nil, nil, nil],
+        [nil, nil, :player1, nil, nil, nil, nil],
+        [nil, :player1, nil, nil, nil, nil, nil],
+        [:player1, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil]
       ]
@@ -255,12 +255,12 @@ defmodule Mix4.Games.BoardTest do
 
     test "multiple diagonal up right winner" do
       board = [
-        [nil, nil, nil, :red, nil, :red, nil],
-        [nil, nil, :red, nil, :red, nil, nil],
-        [nil, :red, nil, :red, nil, nil, :red],
-        [:red, nil, :red, nil, nil, :red, nil],
-        [nil, :red, nil, nil, :red, nil, nil],
-        [nil, nil, nil, :red, nil, nil, nil]
+        [nil, nil, nil, :player1, nil, :player1, nil],
+        [nil, nil, :player1, nil, :player1, nil, nil],
+        [nil, :player1, nil, :player1, nil, nil, :player1],
+        [:player1, nil, :player1, nil, nil, :player1, nil],
+        [nil, :player1, nil, nil, :player1, nil, nil],
+        [nil, nil, nil, :player1, nil, nil, nil]
       ]
 
       assert Board.winners(board) == [
@@ -275,10 +275,10 @@ defmodule Mix4.Games.BoardTest do
       board = [
         [nil, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
-        [:red, nil, nil, nil, nil, nil, nil],
-        [nil, :red, nil, nil, nil, nil, nil],
-        [nil, nil, :red, nil, nil, nil, nil],
-        [nil, nil, nil, :red, nil, nil, nil]
+        [:player1, nil, nil, nil, nil, nil, nil],
+        [nil, :player1, nil, nil, nil, nil, nil],
+        [nil, nil, :player1, nil, nil, nil, nil],
+        [nil, nil, nil, :player1, nil, nil, nil]
       ]
 
       assert [diagonal1] = Board.winners(board)
@@ -287,12 +287,12 @@ defmodule Mix4.Games.BoardTest do
 
     test "multiple diagonal down right winners" do
       board = [
-        [nil, nil, nil, :red, nil, nil, nil],
-        [nil, :red, nil, nil, :red, nil, nil],
-        [:red, nil, :red, nil, nil, :red, nil],
-        [nil, :red, nil, :red, nil, nil, :red],
-        [nil, nil, :red, nil, :red, nil, nil],
-        [nil, nil, nil, :red, nil, :red, nil]
+        [nil, nil, nil, :player1, nil, nil, nil],
+        [nil, :player1, nil, nil, :player1, nil, nil],
+        [:player1, nil, :player1, nil, nil, :player1, nil],
+        [nil, :player1, nil, :player1, nil, nil, :player1],
+        [nil, nil, :player1, nil, :player1, nil, nil],
+        [nil, nil, nil, :player1, nil, :player1, nil]
       ]
 
       assert Board.winners(board) == [
@@ -307,10 +307,10 @@ defmodule Mix4.Games.BoardTest do
       board = [
         [nil, nil, nil, nil, nil, nil, nil],
         [nil, nil, nil, nil, nil, nil, nil],
-        [:red, nil, nil, :red, nil, nil, nil],
-        [:red, nil, :red, nil, nil, nil, nil],
-        [:red, :red, nil, nil, nil, nil, nil],
-        [:red, :red, :red, :red, nil, nil, nil]
+        [:player1, nil, nil, :player1, nil, nil, nil],
+        [:player1, nil, :player1, nil, nil, nil, nil],
+        [:player1, :player1, nil, nil, nil, nil, nil],
+        [:player1, :player1, :player1, :player1, nil, nil, nil]
       ]
 
       assert Board.winners(board) == [
@@ -322,12 +322,12 @@ defmodule Mix4.Games.BoardTest do
 
     test "all possible winners" do
       board = [
-        [:red, :red, :red, :red, :red, :red, :red],
-        [:red, :red, :red, :red, :red, :red, :red],
-        [:red, :red, :red, :red, :red, :red, :red],
-        [:red, :red, :red, :red, :red, :red, :red],
-        [:red, :red, :red, :red, :red, :red, :red],
-        [:red, :red, :red, :red, :red, :red, :red]
+        [:player1, :player1, :player1, :player1, :player1, :player1, :player1],
+        [:player1, :player1, :player1, :player1, :player1, :player1, :player1],
+        [:player1, :player1, :player1, :player1, :player1, :player1, :player1],
+        [:player1, :player1, :player1, :player1, :player1, :player1, :player1],
+        [:player1, :player1, :player1, :player1, :player1, :player1, :player1],
+        [:player1, :player1, :player1, :player1, :player1, :player1, :player1]
       ]
 
       rows = 4 * 6
@@ -341,22 +341,22 @@ defmodule Mix4.Games.BoardTest do
 
   test "transpose/1" do
     board = [
-      [:red, nil, nil, :red, nil, nil, :red],
-      [:red, nil, nil, nil, nil, nil, :red],
-      [:red, nil, nil, nil, nil, nil, :red],
-      [:red, nil, nil, nil, nil, nil, :red],
-      [:red, nil, nil, nil, nil, nil, :red],
-      [:red, nil, nil, nil, nil, nil, :red]
+      [:player1, nil, nil, :player1, nil, nil, :player1],
+      [:player1, nil, nil, nil, nil, nil, :player1],
+      [:player1, nil, nil, nil, nil, nil, :player1],
+      [:player1, nil, nil, nil, nil, nil, :player1],
+      [:player1, nil, nil, nil, nil, nil, :player1],
+      [:player1, nil, nil, nil, nil, nil, :player1]
     ]
 
     assert Board.transpose(board) == [
-             [:red, :red, :red, :red, :red, :red],
+             [:player1, :player1, :player1, :player1, :player1, :player1],
              [nil, nil, nil, nil, nil, nil],
              [nil, nil, nil, nil, nil, nil],
-             [:red, nil, nil, nil, nil, nil],
+             [:player1, nil, nil, nil, nil, nil],
              [nil, nil, nil, nil, nil, nil],
              [nil, nil, nil, nil, nil, nil],
-             [:red, :red, :red, :red, :red, :red]
+             [:player1, :player1, :player1, :player1, :player1, :player1]
            ]
   end
 end

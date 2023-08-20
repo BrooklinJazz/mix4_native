@@ -2,23 +2,20 @@ defmodule Mix4Web.MenuLive do
   use Mix4Web, :live_view
   use LiveViewNative.LiveView
   alias Mix4.GamesServer
-  alias Mix4.Games.Board
-  alias Mix4.Games.Game
   alias Mix4Web.Presence
 
   @impl true
-  def mount(_params, %{"current_player" => current_player} = session, socket) do
+  def mount(_params, %{"current_player" => current_player} = _session, socket) do
     if connected?(socket) do
       Mix4Web.Endpoint.subscribe("player:#{current_player.id}")
       Mix4Web.Endpoint.subscribe(Presence.players_topic())
-      # Presence.track_player(self(), current_player, (game && game.id) || nil)
       Presence.track_player(self(), current_player, nil)
     end
 
     game = GamesServer.find_game_by_player(current_player)
 
     if game do
-      redirect(socket, to: ~p"/game/#{game}")
+      {:ok, redirect(socket, to: ~p"/game/#{game}")}
     else
       socket =
         socket
@@ -75,11 +72,14 @@ defmodule Mix4Web.MenuLive do
           </li>
         </ul>
         <%= if @waiting do %>
-          <.button phx-click="leave-queue">
-            Waiting...
+          <p>
+            Waiting for opponent <.icon name="hero-arrow-path" class="ml-1 w-3 h-3 animate-spin" />
+          </p>
+          <.button id="leave-queue" phx-click="leave-queue">
+            Cancel
           </.button>
         <% else %>
-          <.button phx-click="play-online">
+          <.button id="play-online" phx-click="play-online">
             Play Online
           </.button>
         <% end %>
@@ -90,9 +90,15 @@ defmodule Mix4Web.MenuLive do
 
   def render(%{platform_id: :swiftui} = assigns) do
     ~SWIFTUI"""
+    <List>
+      <%= for player <- @players do %>
+        <Text id={player.struct.id}><%= player.struct.name %></Text>
+      <% end %>
+    </List>
     <Section>
       <%= if @waiting do %>
-        <Button id="leave-queue" phx-click="leave-queue">Waiting..</Button>
+        <Text>Waiting for opponent</Text>
+        <Button id="leave-queue" phx-click="leave-queue">Cancel</Button>
       <% else %>
         <Button id="play-online" phx-click="play-online">Play Online</Button>
       <% end %>
@@ -100,16 +106,19 @@ defmodule Mix4Web.MenuLive do
     """
   end
 
+  @impl true
   def handle_event("leave-queue", _params, socket) do
     GamesServer.leave_queue(socket.assigns.current_player)
     {:noreply, assign(socket, :waiting, false)}
   end
 
+  @impl true
   def handle_event("play-online", _params, socket) do
     GamesServer.join_queue(socket.assigns.current_player)
     {:noreply, assign(socket, :waiting, true)}
   end
 
+  @impl true
   def handle_event("request", %{"player_id" => player_id}, socket) do
     player = Enum.find(socket.assigns.players, fn %{struct: player} -> player.id == player_id end)
 
@@ -125,9 +134,6 @@ defmodule Mix4Web.MenuLive do
 
   @impl true
   def handle_info({:game_started, game}, socket) do
-    # Phoenix.PubSub.subscribe(Mix4.PubSub, "game:#{game.id}")
-    # Presence.track_in_game(self(), socket.assigns.current_player, game.id)
-
     {:noreply, redirect(socket, to: ~p"/game/#{game}")}
     #  socket |> assign(:game, game) |> assign(:waiting, false) |> assign_time_remaining()}
   end
@@ -138,21 +144,9 @@ defmodule Mix4Web.MenuLive do
      assign(socket, :incoming_requests, [incoming_request | socket.assigns.incoming_requests])}
   end
 
+  @impl true
   def handle_info(%{event: "presence_diff", payload: _payload}, socket) do
     {:noreply, assign_players(socket)}
-  end
-
-  def sort_players(players, incoming_requests, outgoing_requests) do
-    # this is likely a performance issue, but it's not a concern for this demo project
-    incoming_players = Enum.filter(players, fn player -> player in incoming_requests end)
-    outgoing_players = Enum.filter(players, fn player -> player in outgoing_requests end)
-
-    no_request_players =
-      Enum.filter(players, fn player ->
-        player not in incoming_requests and player not in outgoing_requests
-      end)
-
-    incoming_players ++ outgoing_players ++ no_request_players
   end
 
   defp assign_incoming_requests(socket) do
@@ -177,29 +171,6 @@ defmodule Mix4Web.MenuLive do
         player.struct.id == socket.assigns.current_player.id
       end)
 
-    assign(socket,
-      players:
-        sort_players(players, socket.assigns.incoming_requests, socket.assigns.outgoing_requests)
-    )
-  end
-
-  defp hex_code(cell) do
-    case cell do
-      :red -> "#FF0000"
-      :yellow -> "#FFC82F"
-      nil -> "#000000"
-    end
-  end
-
-  defp player_color(%Game{} = game, player) do
-    player1 = Game.player1(game)
-    player2 = Game.player2(game)
-
-    case {player, Game.current_turn(game) == player} do
-      {^player1, true} -> "bg-purple-400"
-      {^player1, false} -> "bg-purple-400 opacity-40"
-      {^player2, true} -> "bg-orange-400"
-      {^player2, false} -> "bg-orange-400 opacity-40"
-    end
+    assign(socket, players: players)
   end
 end
