@@ -73,6 +73,14 @@ defmodule Mix4.GamesTest do
     assert {:ignored, _games} = Games.join_queue(games, playerb)
   end
 
+  test "join_queue/2 player cannot join_queue multiple times" do
+    playera = Player.new(id: "a", name: "playera")
+    games = Games.new()
+
+    {:enqueued, games} = Games.join_queue(games, playera)
+    assert {:ignored, _games} = Games.join_queue(games, playera)
+  end
+
   test "join_queue/2 player cannot join a game when they are in a requested game" do
     playera = Player.new(id: "a", name: "playera")
     playerb = Player.new(id: "b", name: "playerb")

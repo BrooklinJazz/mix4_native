@@ -90,19 +90,48 @@ defmodule Mix4Web.MenuLive do
 
   def render(%{platform_id: :swiftui} = assigns) do
     ~SWIFTUI"""
-    <List>
-      <%= for player <- @players do %>
-        <Text id={player.struct.id}><%= player.struct.name %></Text>
-      <% end %>
-    </List>
-    <Section>
+    <VStack>
+      <List id="players-list">
+        <%= for player <- @players  do %>
+          <HStack>
+            <Text id={player.struct.id}><%= player.struct.name %></Text>
+            <Spacer/>
+            <%= cond do %>
+              <% player.game_id -> %>
+                <Button id={"currently-playing-#{player.struct.id}"} modifiers={disabled(true)}>
+                  Already In Game
+                </Button>
+              <% player.struct in @outgoing_requests -> %>
+                <Button id={"request-player-#{player.struct.id}"} modifiers={disabled(true)}>
+                  Requested
+                </Button>
+              <% player.struct in @incoming_requests -> %>
+                <Button
+                  id={"request-player-#{player.struct.id}"}
+                  phx-click="request"
+                  phx-value-player_id={player.struct.id}
+                >
+                  Accept Request
+                </Button>
+              <% true -> %>
+                <Button
+                  id={"request-player-#{player.struct.id}"}
+                  phx-click="request"
+                  phx-value-player_id={player.struct.id}
+                >
+                  Request
+                </Button>
+            <% end %>
+          </HStack>
+        <% end %>
+      </List>
       <%= if @waiting do %>
         <Text>Waiting for opponent</Text>
         <Button id="leave-queue" phx-click="leave-queue">Cancel</Button>
       <% else %>
-        <Button id="play-online" phx-click="play-online">Play Online</Button>
+        <Button id="play-online" phx-click="play-online" modifiers={frame(height: 100) |> font(font: {:system, :title2})}>Play Online</Button>
       <% end %>
-    </Section>
+    </VStack>
     """
   end
 
@@ -134,8 +163,7 @@ defmodule Mix4Web.MenuLive do
 
   @impl true
   def handle_info({:game_started, game}, socket) do
-    {:noreply, redirect(socket, to: ~p"/game/#{game}")}
-    #  socket |> assign(:game, game) |> assign(:waiting, false) |> assign_time_remaining()}
+    {:noreply, push_navigate(socket, to: ~p"/game/#{game}")}
   end
 
   @impl true

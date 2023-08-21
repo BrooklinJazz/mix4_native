@@ -5,16 +5,19 @@ defmodule Mix4Web.GameLive do
   use LiveViewNative.LiveView
   alias Mix4.Games.Board
   alias Mix4.Games.Game
+  alias Mix4.Games.Player
 
+  # @impl true
+  # def mount(%{"game_id" => game_id}, %{"current_player" => current_player}, socket) do
+  #   game = GamesServer.find_game_by_id(game_id)
   @impl true
-  def mount(%{"game_id" => game_id}, %{"current_player" => current_player}, socket) do
-    get_connect_params(socket)
-    game = GamesServer.find_game_by_id(game_id)
+  def mount(_params, %{"current_player" => current_player}, socket) do
+    game = Game.new(current_player, Player.new())
 
     if connected?(socket) do
       Mix4Web.Endpoint.subscribe("player:#{current_player.id}")
-      Mix4Web.Endpoint.subscribe("game:#{game_id}")
-      Presence.track_player(self(), current_player, game_id)
+      Mix4Web.Endpoint.subscribe("game:#{game.id}")
+      Presence.track_player(self(), current_player, game.id)
       Presence.track_in_game(self(), current_player, game.id)
       send(self(), :tick)
     end
@@ -29,6 +32,51 @@ defmodule Mix4Web.GameLive do
     else
       {:ok, redirect(socket, to: "/")}
     end
+  end
+
+  def render(%{platform_id: :swiftui} = assigns) do
+    ~SWIFTUI"""
+    <VStack>
+        <HStack
+          modifiers={
+            background({:color, :blue})
+            |> corner_radius(radius: 20)
+          }
+          id="board"
+        >
+          <%= for {column, x} <- Enum.with_index(Board.transpose(Game.board(@game))) do %>
+            <VStack id={"column-#{x}"} phx-click="drop" phx-value-column={x}>
+              <%= for {cell, y} <- Enum.with_index(column) do %>
+                <Image
+                  id={"cell-#{x}-#{y}"}
+                  data-color={cell}
+                  system-name="drop.fill"
+                  modifiers={
+                    foreground_color(cell_color(cell))
+                    |> frame(width: 50, height: 50)
+                    |> image_scale(:large)
+                    # the resizable and scaled_to_fit modifiers are currently not working.
+                    |> resizable([])
+                    |> scaled_to_fit([])
+                  }
+                />
+              <% end %>
+            </VStack>
+          <% end %>
+      </HStack>
+      <%= cond do %>
+        <% Game.winner(@game) == @current_player -> %>
+          <Text>You win!</Text>
+        <% Game.winner(@game) == @opponent -> %>
+          <Text>You lose..</Text>
+        <% Game.current_turn(@game) == @current_player -> %>
+          <Text>Your Turn</Text>
+        <% Game.current_turn(@game) == @opponent -> %>
+          <Text>Waiting for opponent</Text>
+      <% end %>
+      <Button id="quit" phx-click="quit">Give Up</Button>
+    </VStack>
+    """
   end
 
   @impl true
@@ -110,28 +158,6 @@ defmodule Mix4Web.GameLive do
     """
   end
 
-  def render(%{platform_id: :swiftui} = assigns) do
-    ~SWIFTUI"""
-    <HStack id="board">
-    <%= for {column, x} <- Enum.with_index(Board.transpose(Game.board(@game))) do %>
-      <VStack id={"column-#{x}"} phx-click="drop" phx-value-column={x}>
-        <%= for {cell, y} <- Enum.with_index(column) do %>
-          <Circle id={"cell-#{x}-#{y}"} data-color={cell} fill-color={hex_code(cell)} />
-        <% end %>
-      </VStack>
-    <% end %>
-    </HStack>
-    """
-  end
-
-  defp hex_code(cell) do
-    case cell do
-      :player1 -> "#FF0000"
-      :player2 -> "#FFC82F"
-      nil -> "#000000"
-    end
-  end
-
   defp hover_style(game, current_player, {x, y}) do
     should_display_hover_style =
       !Game.winner(game) and Game.current_turn(game) == current_player and
@@ -207,6 +233,14 @@ defmodule Mix4Web.GameLive do
     end
 
     assign(socket, :time_remaining, time_remaining)
+  end
+
+  defp cell_color(cell) do
+    case cell do
+      :player1 -> :indigo
+      :player2 -> :orange
+      _ -> :black
+    end
   end
 
   defp indexed_columns(game) do

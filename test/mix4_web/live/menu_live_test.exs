@@ -18,14 +18,14 @@ defmodule Mix4Web.Mix4LiveTest do
     assert conn.private.live_view_connect_params == %{"_platform" => "swiftui"}
   end
 
-  @platforms [:web]
+  @platforms [:swiftui, :web]
   cross_platform_test "connected mount", %{conn: conn} do
     {:ok, _view, html} = live(conn, ~p"/")
 
     assert html =~ "Mix4"
   end
 
-  @platforms [:web]
+  @platforms [:swiftui, :web]
   cross_platform_test "connected mount _ game already exists", %{conn: conn} do
     playera = Player.new()
     playerb = Player.new()
@@ -35,7 +35,7 @@ defmodule Mix4Web.Mix4LiveTest do
     assert "/game/" <> _id = path
   end
 
-  @platforms [:web]
+  @platforms [:swiftui, :web]
   cross_platform_test "two players join game", %{conn: conn} do
     {:ok, viewa, _html} = conn |> set_player(Player.new()) |> live(~p"/")
     {:ok, viewb, _html} = conn |> set_player(Player.new()) |> live(~p"/")
@@ -49,7 +49,7 @@ defmodule Mix4Web.Mix4LiveTest do
     assert "/game/" <> _id = path
   end
 
-  @platforms [:web]
+  @platforms [:swiftui, :web]
   cross_platform_test "cancel queueing", %{conn: conn} do
     playera = Player.new()
     {:ok, view, _html} = conn |> set_player(playera) |> live("/")
@@ -59,7 +59,7 @@ defmodule Mix4Web.Mix4LiveTest do
     assert has_element?(view, "#play-online")
   end
 
-  @platforms [:web]
+  @platforms [:swiftui, :web]
   cross_platform_test "display player list", %{conn: conn} do
     playera = Player.new(name: "player a name")
     playerb = Player.new(name: "player b name")
@@ -81,7 +81,7 @@ defmodule Mix4Web.Mix4LiveTest do
     assert viewc |> element("#players-list") |> render() =~ playerb.name
   end
 
-  @platforms [:web]
+  @platforms [:swiftui, :web]
   cross_platform_test "request game triggers already requested styles", %{conn: conn} do
     playera = Player.new()
     playerb = Player.new()
@@ -96,7 +96,7 @@ defmodule Mix4Web.Mix4LiveTest do
              "Accept Request"
   end
 
-  @platforms [:web]
+  @platforms [:swiftui, :web]
   cross_platform_test "request and accept a game between two players", %{conn: conn} do
     playera = Player.new()
     playerb = Player.new()

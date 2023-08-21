@@ -16,24 +16,24 @@ defmodule Mix4Web.GameLiveTest do
     [player1: player1, player2: player2, game: game]
   end
 
-  @platforms [:web]
+  @platforms [:swiftui, :web]
   cross_platform_test "connected mount _ game exists", ctx do
     {:ok, view, _html} = ctx.conn |> set_player(ctx.player1) |> live(~p"/game/#{ctx.game}")
     assert has_element?(view, "#board")
   end
 
-  @platforms [:web]
+  @platforms [:swiftui, :web]
   cross_platform_test "connected mount _ player is not part of game", ctx do
     assert {:error, {:redirect, %{to: "/"}}} =
              ctx.conn |> set_player(Player.new()) |> live(~p"/game/non_existing_game_id")
   end
 
-  @platforms [:web]
+  @platforms [:swiftui, :web]
   cross_platform_test "connected mount _ game does not exist", ctx do
     assert {:error, {:redirect, %{to: "/"}}} = live(ctx.conn, ~p"/game/non_existing_game_id")
   end
 
-  @platforms [:web]
+  @platforms [:swiftui, :web]
   cross_platform_test "player drops disc", ctx do
     {:ok, view1, _html} = ctx.conn |> set_player(ctx.player1) |> live(~p"/game/#{ctx.game}")
     {:ok, view2, _html} = ctx.conn |> set_player(ctx.player2) |> live(~p"/game/#{ctx.game}")
@@ -47,7 +47,7 @@ defmodule Mix4Web.GameLiveTest do
     assert view2 |> element("#cell-1-5") |> render() =~ "player2"
   end
 
-  @platforms [:web]
+  @platforms [:swiftui, :web]
   cross_platform_test "display current turn", ctx do
     {:ok, view1, _html} = ctx.conn |> set_player(ctx.player1) |> live(~p"/game/#{ctx.game}")
     {:ok, view2, _html} = ctx.conn |> set_player(ctx.player2) |> live(~p"/game/#{ctx.game}")
@@ -61,7 +61,7 @@ defmodule Mix4Web.GameLiveTest do
     assert render(view2) =~ "Your Turn"
   end
 
-  @platforms [:web]
+  @platforms [:swiftui, :web]
   cross_platform_test "player wins", ctx do
     {:ok, view1, _html} = ctx.conn |> set_player(ctx.player1) |> live(~p"/game/#{ctx.game}/")
     {:ok, view2, _html} = ctx.conn |> set_player(ctx.player2) |> live(~p"/game/#{ctx.game}/")
@@ -78,7 +78,7 @@ defmodule Mix4Web.GameLiveTest do
     assert view2 |> render() =~ "You lose"
   end
 
-  @platforms [:web]
+  @platforms [:swiftui, :web]
   cross_platform_test "quit", ctx do
     {:ok, view1, _html} = ctx.conn |> set_player(ctx.player1) |> live(~p"/game/#{ctx.game}/")
     {:ok, view2, _html} = ctx.conn |> set_player(ctx.player2) |> live(~p"/game/#{ctx.game}/")
