@@ -1,4 +1,4 @@
-defmodule LiveViewNative.Test do
+defmodule Mix4Test.LiveViewNativeCase do
   use ExUnit.CaseTemplate
 
   using do
@@ -27,7 +27,7 @@ defmodule LiveViewNative.Test do
     quote do
       previous_tags = Module.get_attribute(__MODULE__, :tag)
 
-      for platform <- Module.get_attribute(__MODULE__, :platforms) || [:web, :swiftui] do
+      for platform <- Module.get_attribute(__MODULE__, :platforms) do
         for tag <- previous_tags do
           @tag tag
         end

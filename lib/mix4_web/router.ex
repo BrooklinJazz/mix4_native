@@ -18,7 +18,8 @@ defmodule Mix4Web.Router do
   scope "/", Mix4Web do
     pipe_through :browser
 
-    live "/", Mix4Live
+    live "/", MenuLive
+    live "/game/:game_id", GameLive
   end
 
   # Other scopes may use custom stacks.

@@ -5,7 +5,7 @@ defmodule Mix4.Games.GameTest do
   alias Mix4.Games.Game
   alias Mix4.Games.Player
 
-  @turn_duration 30
+  @turn_duration 20
 
   test "board/1" do
     playera = Player.new(id: "a")
@@ -33,7 +33,7 @@ defmodule Mix4.Games.GameTest do
              [nil, nil, nil, nil, nil, nil, nil],
              [nil, nil, nil, nil, nil, nil, nil],
              [nil, nil, nil, nil, nil, nil, nil],
-             [:red, nil, nil, nil, nil, nil, nil]
+             [:player1, nil, nil, nil, nil, nil, nil]
            ]
   end
 
@@ -49,8 +49,8 @@ defmodule Mix4.Games.GameTest do
              [nil, nil, nil, nil, nil, nil, nil],
              [nil, nil, nil, nil, nil, nil, nil],
              [nil, nil, nil, nil, nil, nil, nil],
-             [:yellow, nil, nil, nil, nil, nil, nil],
-             [:red, nil, nil, nil, nil, nil, nil]
+             [:player2, nil, nil, nil, nil, nil, nil],
+             [:player1, nil, nil, nil, nil, nil, nil]
            ]
   end
 
@@ -103,15 +103,15 @@ defmodule Mix4.Games.GameTest do
     assert Game.finished?(game)
   end
 
-  test "marker/2 player1 is red" do
+  test "marker/2 player1 is player1" do
     playera = Player.new(id: "a")
     playerb = Player.new(id: "b")
     game = Game.new(playera, playerb)
 
     player1 = Game.player1(game)
     player2 = Game.player2(game)
-    assert Game.marker(game, player1) == :red
-    assert Game.marker(game, player2) == :yellow
+    assert Game.marker(game, player1) == :player1
+    assert Game.marker(game, player2) == :player2
   end
 
   test "new/2 start game randomly selects player1 and player2" do

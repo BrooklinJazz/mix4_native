@@ -47,11 +47,10 @@ config :logger, :console,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
-config :live_view_native, :platforms, [LiveViewNativeSwiftUi.Platform]
-
-config :live_view_native, LiveViewNativeSwiftUi.Platform,
-  app_name: "Mix4",
-  custom_modifiers: []
+config :live_view_native,
+  plugins: [
+    LiveViewNativeSwiftUi
+  ]
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

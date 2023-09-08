@@ -39,6 +39,9 @@ defmodule Mix4.Games do
       existing_game ->
         {:ignored, games}
 
+      player in games.queue ->
+        {:ignored, games}
+
       Enum.any?(games.queue) ->
         waiting_player = hd(games.queue)
 

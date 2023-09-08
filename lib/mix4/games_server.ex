@@ -20,6 +20,10 @@ defmodule Mix4.GamesServer do
     GenServer.call(pid, {:find_game_by_player, player})
   end
 
+  def find_game_by_id(pid \\ __MODULE__, id) do
+    GenServer.call(pid, {:find_game_by_id, id})
+  end
+
   def incoming_requests(pid \\ __MODULE__, player) do
     GenServer.call(pid, {:incoming_requests, player})
   end
@@ -52,8 +56,16 @@ defmodule Mix4.GamesServer do
     GenServer.call(pid, {:waiting, player})
   end
 
+  def wipe(pid \\ __MODULE__) do
+    GenServer.call(pid, :wipe)
+  end
+
   def handle_call({:find_game_by_player, player}, _from, games) do
     {:reply, Games.find_game_by_player(games, player), games}
+  end
+
+  def handle_call({:find_game_by_id, game_id}, _from, games) do
+    {:reply, Games.find_game_by_id(games, game_id), games}
   end
 
   def handle_call({:drop, game_id, player, column_index}, _from, games) do
@@ -102,10 +114,12 @@ defmodule Mix4.GamesServer do
 
   def handle_call({:quit, player}, _from, games) do
     game = Games.find_game_by_player(games, player)
+
+    if game && !Game.winner(game) do
+      Phoenix.PubSub.broadcast(Mix4.PubSub, "game:#{game.id}", {:game_quit, player})
+    end
+
     {:ok, games} = Games.quit(games, player)
-
-    Phoenix.PubSub.broadcast(Mix4.PubSub, "game:#{game.id}", {:game_quit, player})
-
     {:reply, :ok, games}
   end
 
@@ -141,6 +155,10 @@ defmodule Mix4.GamesServer do
 
   def handle_call({:waiting, player}, _from, games) do
     {:reply, Games.waiting?(games, player), games}
+  end
+
+  def handle_call(:wipe, _from, _games) do
+    {:reply, :ok, Games.new()}
   end
 
   defp broadcast_new_game(new_game) do

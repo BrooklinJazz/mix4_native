@@ -6,17 +6,15 @@
 //
 
 import SwiftUI
-import CoreData
-
-import SwiftUI
 import LiveViewNative
 
 struct ContentView: View {
+    
     var body: some View {
-        LiveView(.localhost)
+        LiveView(session: session)
     }
 }
-
+	
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
