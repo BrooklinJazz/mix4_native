@@ -52,13 +52,12 @@ defmodule Mix4Web.GameLiveTest do
     {:ok, view1, _html} = ctx.conn |> set_player(ctx.player1) |> live(~p"/game/#{ctx.game}")
     {:ok, view2, _html} = ctx.conn |> set_player(ctx.player2) |> live(~p"/game/#{ctx.game}")
 
-    assert render(view1) =~ "Your Turn"
-    assert render(view2) =~ "Waiting for opponent"
+    assert has_element?(view1, "#your-turn")
+    assert has_element?(view2, "#waiting-for-opponent")
 
     view1 |> element("#column-0") |> render_click()
-
-    assert render(view1) =~ "Waiting for opponent"
-    assert render(view2) =~ "Your Turn"
+    assert has_element?(view1, "#waiting-for-opponent")
+    assert has_element?(view2, "#your-turn")
   end
 
   @platforms [:swiftui, :web]

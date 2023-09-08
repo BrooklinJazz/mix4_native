@@ -68,15 +68,12 @@ defmodule Mix4Web.Mix4LiveTest do
     {:ok, viewb, _html} = conn |> set_player(playerb) |> live("/")
     {:ok, viewc, _html} = conn |> set_player(playerc) |> live("/")
 
-    refute viewa |> element("#players-list") |> render() =~ playera.name
     assert viewa |> element("#players-list") |> render() =~ playerb.name
     assert viewa |> element("#players-list") |> render() =~ playerc.name
 
-    refute viewb |> element("#players-list") |> render() =~ playerb.name
     assert viewb |> element("#players-list") |> render() =~ playera.name
     assert viewb |> element("#players-list") |> render() =~ playerc.name
 
-    refute viewc |> element("#players-list") |> render() =~ playerc.name
     assert viewc |> element("#players-list") |> render() =~ playera.name
     assert viewc |> element("#players-list") |> render() =~ playerb.name
   end

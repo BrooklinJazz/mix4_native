@@ -82,9 +82,9 @@ defmodule Mix4Web.GameLive do
         <% Game.winner(@game) == @opponent -> %>
           <Text modifiers={frame(max_width: 9999, max_height: 50) |> background({:color, :red})}>You lose..</Text>
         <% Game.current_turn(@game) == @current_player -> %>
-          <Text modifiers={frame(max_width: 9999, max_height: 50) |> background({:color, :gray})}>Your turn</Text>
+          <Text id="your-turn" modifiers={frame(max_width: 9999, max_height: 50) |> background({:color, :gray})}>Your turn</Text>
         <% Game.current_turn(@game) == @opponent -> %>
-          <Text modifiers={frame(max_width: 9999, max_height: 50) |> background({:color, :gray}) |> opacity(0.5)}>Waiting for opponent</Text>
+          <Text id="waiting-for-opponent" modifiers={frame(max_width: 9999, max_height: 50) |> background({:color, :gray}) |> opacity(0.5)}>Waiting for opponent</Text>
       <% end %>
       <HStack>
         <Spacer/>
