@@ -7,12 +7,12 @@ defmodule Mix4Web.GameLive do
   alias Mix4.Games.Game
   alias Mix4.Games.Player
 
-  # @impl true
-  # def mount(%{"game_id" => game_id}, %{"current_player" => current_player}, socket) do
-  #   game = GamesServer.find_game_by_id(game_id)
   @impl true
   def mount(_params, %{"current_player" => current_player}, socket) do
-    game = Game.new(current_player, Player.new())
+  game = GamesServer.find_game_by_player(current_player)
+  # game = GamesServer.find_game_by_id(game_id)
+  # def mount(_params, %{"current_player" => current_player}, socket) do
+  #  game = Game.new(current_player, Player.new())
 
     if connected?(socket) do
       Mix4Web.Endpoint.subscribe("player:#{current_player.id}")
@@ -30,51 +30,68 @@ defmodule Mix4Web.GameLive do
        |> assign(:opponent, Game.opponent(game, current_player))
        |> assign_time_remaining()}
     else
-      {:ok, redirect(socket, to: "/")}
+      {:ok, push_navigate(socket, to: "/")}
     end
   end
 
   def render(%{platform_id: :swiftui} = assigns) do
     ~SWIFTUI"""
-    <VStack>
-        <HStack
-          modifiers={
-            background({:color, :blue})
-            |> corner_radius(radius: 20)
-          }
-          id="board"
+    <VStack id="game_live" modifiers={padding(20)}>
+        <HStack>
+          <Text modifiers={frame(max_width: 9999, max_height: 50) |> background({:color, player_color(Game.marker(@game, @current_player))}) |> opacity(if Game.winner(@game) || @current_player == Game.current_turn(@game), do: 1, else: 0.5)}>
+            <%= @current_player.name %><%= if not Game.finished?(@game) and @current_player == Game.current_turn(@game),
+              do: " #{@time_remaining}s" %>
+          </Text>
+          <Text modifiers={frame(max_width: 9999, max_height: 50) |> background({:color, player_color(Game.marker(@game, @opponent))}) |> opacity(if Game.winner(@game) || @opponent == Game.current_turn(@game), do: 1, else: 0.5)}>
+            <%= @opponent.name %><%= if not Game.finished?(@game) and @opponent == Game.current_turn(@game),
+              do: " #{@time_remaining}s" %>
+          </Text>
+        </HStack>
+        <VStack
+            id="board"
+            modifiers={
+              background({:color, :blue})
+              |> frame(max_width: 9999)
+            }
         >
-          <%= for {column, x} <- Enum.with_index(Board.transpose(Game.board(@game))) do %>
-            <VStack id={"column-#{x}"} phx-click="drop" phx-value-column={x}>
-              <%= for {cell, y} <- Enum.with_index(column) do %>
-                <Image
-                  id={"cell-#{x}-#{y}"}
-                  data-color={cell}
-                  system-name="drop.fill"
-                  modifiers={
-                    foreground_color(cell_color(cell))
-                    |> frame(width: 50, height: 50)
-                    |> image_scale(:large)
-                    # the resizable and scaled_to_fit modifiers are currently not working.
-                    |> resizable([])
-                    |> scaled_to_fit([])
-                  }
-                />
-              <% end %>
-            </VStack>
-          <% end %>
-      </HStack>
+          <HStack
+            modifiers={frame(max_width: 9999) |> padding(top: 20, bottom: 20)}
+          >
+            <%= for {column, x} <- Enum.with_index(Board.transpose(Game.board(@game))) do %>
+              <VStack id={"column-#{x}"} phx-click="drop" phx-value-column={x}>
+                <%= for {cell, y} <- Enum.with_index(column) do %>
+                  <Image
+                    id={"cell-#{x}-#{y}"}
+                    data-color={cell}
+                    system-name="drop.fill"
+                    modifiers={
+                      resizable([])
+                      |> scaled_to_fit([])
+                      |> frame(width: 40, height: 40)
+                      |> foreground_color(player_color(cell))
+                    }
+                  />
+                <% end %>
+              </VStack>
+            <% end %>
+        </HStack>
+      </VStack>
       <%= cond do %>
         <% Game.winner(@game) == @current_player -> %>
-          <Text>You win!</Text>
+          <Text modifiers={frame(max_width: 9999, max_height: 50) |> background({:color, :green})}>You win!</Text>
         <% Game.winner(@game) == @opponent -> %>
-          <Text>You lose..</Text>
+          <Text modifiers={frame(max_width: 9999, max_height: 50) |> background({:color, :red})}>You lose..</Text>
         <% Game.current_turn(@game) == @current_player -> %>
-          <Text>Your Turn</Text>
+          <Text modifiers={frame(max_width: 9999, max_height: 50) |> background({:color, :gray})}>Your turn</Text>
         <% Game.current_turn(@game) == @opponent -> %>
-          <Text>Waiting for opponent</Text>
+          <Text modifiers={frame(max_width: 9999, max_height: 50) |> background({:color, :gray}) |> opacity(0.5)}>Waiting for opponent</Text>
       <% end %>
-      <Button id="quit" phx-click="quit">Give Up</Button>
+      <HStack>
+        <Spacer/>
+        <Button id="quit" phx-click="quit" modifiers={frame(max_height: 50, max_width: 130) |> background({:color, :black}) |> foreground_color(:white)}>
+          <%= if Game.winner(@game), do: "Exit", else: "Give Up" %>
+        </Button>
+      </HStack>
     </VStack>
     """
   end
@@ -122,7 +139,7 @@ defmodule Mix4Web.GameLive do
           id={"column-#{x}"}
           phx-click="drop"
           phx-value-column={x}
-          class="group flex-grow"
+          class={"group flex-grow #{if Game.current_turn(@game) == @current_player, do: "cursor-pointer", else: "cursor-default"}"}
         >
           <div
             :for={{cell, y} <- Enum.with_index(column)}
@@ -206,8 +223,15 @@ defmodule Mix4Web.GameLive do
     {:noreply, socket}
   end
 
+  @impl true
+  def handle_info({:game_started, game}, socket) do
+    # GameLive occasionally receives a game started message.
+    # This is a quick hack to avoid crashing
+    {:noreply, socket}
+  end
+
   def handle_info(:tick, socket) do
-    Process.send_after(self(), :tick, 1000)
+    Process.send_after(self(), :tick, 100)
 
     if Game.finished?(socket.assigns.game) do
       {:noreply, socket}
@@ -235,7 +259,7 @@ defmodule Mix4Web.GameLive do
     assign(socket, :time_remaining, time_remaining)
   end
 
-  defp cell_color(cell) do
+  defp player_color(cell) do
     case cell do
       :player1 -> :indigo
       :player2 -> :orange

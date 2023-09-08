@@ -24,13 +24,13 @@ defmodule Mix4Web.GameLiveTest do
 
   @platforms [:swiftui, :web]
   cross_platform_test "connected mount _ player is not part of game", ctx do
-    assert {:error, {:redirect, %{to: "/"}}} =
+    assert {:error, {:live_redirect, %{to: "/"}}} =
              ctx.conn |> set_player(Player.new()) |> live(~p"/game/non_existing_game_id")
   end
 
   @platforms [:swiftui, :web]
   cross_platform_test "connected mount _ game does not exist", ctx do
-    assert {:error, {:redirect, %{to: "/"}}} = live(ctx.conn, ~p"/game/non_existing_game_id")
+    assert {:error, {:live_redirect, %{to: "/"}}} = live(ctx.conn, ~p"/game/non_existing_game_id")
   end
 
   @platforms [:swiftui, :web]

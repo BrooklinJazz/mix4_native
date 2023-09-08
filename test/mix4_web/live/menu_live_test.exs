@@ -31,7 +31,7 @@ defmodule Mix4Web.Mix4LiveTest do
     playerb = Player.new()
     GamesServer.join_queue(playera)
     GamesServer.join_queue(playerb)
-    assert {:error, {:redirect, %{to: path}}} = conn |> set_player(playera) |> live(~p"/")
+    assert {:error, {:live_redirect, %{to: path}}} = conn |> set_player(playera) |> live(~p"/")
     assert "/game/" <> _id = path
   end
 

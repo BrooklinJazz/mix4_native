@@ -15,7 +15,7 @@ defmodule Mix4Web.MenuLive do
     game = GamesServer.find_game_by_player(current_player)
 
     if game do
-      {:ok, redirect(socket, to: ~p"/game/#{game}")}
+      {:ok, push_navigate(socket, to: ~p"/game/#{game}")}
     else
       socket =
         socket
@@ -29,12 +29,70 @@ defmodule Mix4Web.MenuLive do
     end
   end
 
-  @impl true
+
+  def render(%{platform_id: :swiftui} = assigns) do
+    ~SWIFTUI"""
+    <VStack id="menu_live">
+      <List id="players-list">
+        <HStack>
+          <Text>Players Online: <%= Enum.count(@players) %></Text>
+          <Spacer/>
+          <Text>Welcome, <%= @current_player.name %></Text>
+        </HStack>
+        <%= for player <- @players  do %>
+          <HStack id={player.struct.id}>
+            <Text><%= player.struct.name %></Text>
+            <Spacer/>
+            <%= cond do %>
+              <% player.game_id -> %>
+                <Button id={"currently-playing-#{player.struct.id}"} modifiers={disabled(true)}>
+                  Already In Game
+                </Button>
+              <% player.struct in @outgoing_requests -> %>
+                <Button id={"request-player-#{player.struct.id}"} modifiers={disabled(true)}>
+                  Requested
+                </Button>
+              <% player.struct in @incoming_requests -> %>
+                <Button
+                  id={"request-player-#{player.struct.id}"}
+                  phx-click="request"
+                  phx-value-player_id={player.struct.id}
+                >
+                  Accept Request
+                </Button>
+              <% true -> %>
+                <Button
+                  id={"request-player-#{player.struct.id}"}
+                  phx-click="request"
+                  phx-value-player_id={player.struct.id}
+                >
+                  Request
+                </Button>
+            <% end %>
+          </HStack>
+        <% end %>
+      </List>
+      <%= if @waiting do %>
+        <VStack modifiers={frame(height: 60)}>
+          <Text>Waiting for opponent</Text>
+          <Button id="leave-queue" phx-click="leave-queue">Cancel</Button>
+        </VStack>
+      <% else %>
+        <Button id="play-online" phx-click="play-online" modifiers={frame(height: 60) |> font(font: {:system, :title2})}>Play Online</Button>
+      <% end %>
+    </VStack>
+    """
+  end
+
+    @impl true
   def render(%{platform_id: :web} = assigns) do
     ~H"""
     <main class="flex w-screen h-screen justify-center items-center">
-      <section id="players-list" class="flex flex-col w-1/2">
-        <h2 class="mb-2">Players Online: <%= Enum.count(@players) %></h2>
+      <section id="players-list" class="flex flex-col w-2/3 md:w-1/2">
+        <article class="flex justify-between">
+          <h2 class="mb-2">Players Online: <%= Enum.count(@players) %></h2>
+          <h2>Welcome, <%= @current_player.name %></h2>
+        </article>
         <ul class="h-[20rem] bg-gray-100 overflow-auto">
           <li
             :for={player <- @players}
@@ -85,53 +143,6 @@ defmodule Mix4Web.MenuLive do
         <% end %>
       </section>
     </main>
-    """
-  end
-
-  def render(%{platform_id: :swiftui} = assigns) do
-    ~SWIFTUI"""
-    <VStack>
-      <List id="players-list">
-        <%= for player <- @players  do %>
-          <HStack>
-            <Text id={player.struct.id}><%= player.struct.name %></Text>
-            <Spacer/>
-            <%= cond do %>
-              <% player.game_id -> %>
-                <Button id={"currently-playing-#{player.struct.id}"} modifiers={disabled(true)}>
-                  Already In Game
-                </Button>
-              <% player.struct in @outgoing_requests -> %>
-                <Button id={"request-player-#{player.struct.id}"} modifiers={disabled(true)}>
-                  Requested
-                </Button>
-              <% player.struct in @incoming_requests -> %>
-                <Button
-                  id={"request-player-#{player.struct.id}"}
-                  phx-click="request"
-                  phx-value-player_id={player.struct.id}
-                >
-                  Accept Request
-                </Button>
-              <% true -> %>
-                <Button
-                  id={"request-player-#{player.struct.id}"}
-                  phx-click="request"
-                  phx-value-player_id={player.struct.id}
-                >
-                  Request
-                </Button>
-            <% end %>
-          </HStack>
-        <% end %>
-      </List>
-      <%= if @waiting do %>
-        <Text>Waiting for opponent</Text>
-        <Button id="leave-queue" phx-click="leave-queue">Cancel</Button>
-      <% else %>
-        <Button id="play-online" phx-click="play-online" modifiers={frame(height: 100) |> font(font: {:system, :title2})}>Play Online</Button>
-      <% end %>
-    </VStack>
     """
   end
 

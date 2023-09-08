@@ -8,7 +8,7 @@ defmodule Mix4Web.Plugs.GuestPlayer do
       nil ->
         Plug.Conn.put_session(conn, :current_player, %Player{
           id: Ecto.UUID.autogenerate(),
-          name: Enum.random(["fluffy", "tiger", "koala", "howard"])
+          name: Faker.Dog.PtBr.name()
         })
 
       _ ->
